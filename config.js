@@ -65,8 +65,8 @@ module.exports = {
     model: "openai/gpt-oss-120b",
 
     // Model Gemini (fallback, kalo semua Groq key habis)
-    // Pilihan: "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"
-    geminiModel: "gemini-2.0-flash",
+    // Pilihan: "gemini-2.5-flash" (terbaru), "gemini-2.0-flash", "gemini-1.5-pro"
+    geminiModel: "gemini-2.5-flash",
 
     // System prompt untuk command !ai (bukan contextual reply)
     systemPrompt: "Kamu adalah asisten pribadi. Jawab dalam Bahasa Indonesia yang santai tapi sopan. Jawab singkat dan jelas, maksimal 2 paragraf.",
