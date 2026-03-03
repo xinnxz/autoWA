@@ -89,21 +89,23 @@ function addToInbox(from, name, text) {
 async function handleCommand(sock, msg) {
   const text = msg.text.trim();
 
+  const ownerName = process.env.OWNER_NAME || 'Bot';
+
   // ─── !help → Tampilkan semua command ───
   if (text === '!help') {
-    const helpText = `*Bot Commands*
+    const helpText = `*📖 Bot Commands*
 
-!help — Tampilkan daftar command ini
-!off — Aktifkan away mode (bot mulai reply)
-!on — Matikan away mode (bot diam)
-!dnd <waktu> — Away mode sementara (misal: !dnd 2h, !dnd 30m)
-!status — Cek status bot sekarang
-!inbox — Lihat chat masuk saat away
-!inbox clear — Hapus semua inbox
-!ai <pertanyaan> — Tanya AI langsung
-!logout — Logout dari WhatsApp
+│ *!help* — Tampilkan daftar command ini
+│ *!off* — Aktifkan away mode
+│ *!on* — Matikan away mode
+│ *!dnd <waktu>* — Away sementara (misal: !dnd 2h)
+│ *!status* — Cek status bot lengkap
+│ *!inbox* — Lihat chat masuk saat away
+│ *!inbox clear* — Hapus semua inbox
+│ *!ai <pertanyaan>* — Tanya AI langsung
+│ *!logout* — Logout WhatsApp
 
-_Commands hanya bisa dijalankan oleh owner._`;
+_Commands hanya untuk owner._`;
     await sock.sendMessage(msg.from, { text: helpText });
     return true;
   }
@@ -112,7 +114,7 @@ _Commands hanya bisa dijalankan oleh owner._`;
   if (text === '!off') {
     botState.awayMode = true;
     await sock.sendMessage(msg.from, { 
-      text: '🔴 *Away mode AKTIF!*\n\nBot akan auto-reply semua chat masuk.\n\n_~autoreply by luthfi_' 
+      text: `🔴 *Away mode AKTIF!*\n\nBot akan auto-reply semua chat masuk.\nAI: ${config.ai.model || 'default'}\nStyle: ${config.ai.replyStyle || 'santai'}` 
     });
     logger.info('Away mode diaktifkan oleh owner');
     return true;
@@ -127,7 +129,7 @@ _Commands hanya bisa dijalankan oleh owner._`;
       botState.dndTimer = null;
     }
     await sock.sendMessage(msg.from, { 
-      text: '🟢 *Away mode MATI!*\n\nBot tidak akan reply siapapun.' 
+      text: '🟢 *Away mode MATI!*\n\nBot tidak akan reply siapapun. Kamu online sekarang.' 
     });
     logger.info('Away mode dimatikan oleh owner');
     return true;
@@ -171,7 +173,7 @@ _Commands hanya bisa dijalankan oleh owner._`;
     });
 
     await sock.sendMessage(msg.from, { 
-      text: `🔇 *DND Mode AKTIF!*\n\n⏱️ Durasi: ${args}\n⏰ Berakhir: ${endTime} WIB\n\nBot akan auto-reply sampai waktu habis.\n\n_~autoreply by luthfi_` 
+      text: `🔇 *DND Mode AKTIF!*\n\n⏱️ Durasi: ${args}\n⏰ Berakhir: ${endTime} WIB\n\nBot akan auto-reply sampai waktu habis.` 
     });
     logger.info(`DND aktif selama ${args} (sampai ${endTime})`);
     return true;
@@ -187,19 +189,29 @@ _Commands hanya bisa dijalankan oleh owner._`;
     }
 
     const memMB = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1);
+    const aiModel = config.ai.model || 'default';
+    const geminiModel = config.ai.geminiModel || 'default';
+    const replyStyle = config.ai.replyStyle || 'santai';
+    const schedule = config.awayMode.schedule;
+    const scheduleStr = schedule.enabled 
+      ? `${schedule.sleepStart} - ${schedule.sleepEnd} ${schedule.timezone}` 
+      : 'Nonaktif';
 
     await sock.sendMessage(msg.from, { 
       text: `📊 *Status AutoWA Bot*\n\n` +
-        `${awayStatus}${dndInfo}\n` +
-        `📬 Inbox: ${inbox.length} pesan\n` +
-        `💾 Memory: ${memMB} MB\n` +
-        `⏱️ Uptime: ${formatUptime(process.uptime())}\n\n` +
-        `*Commands:*\n` +
-        `• !on — matikan away\n` +
-        `• !off — aktifkan away\n` +
-        `• !dnd 2h — DND 2 jam\n` +
-        `• !inbox — lihat inbox\n` +
-        `• !ai <tanya> — tanya AI`
+        `│ Status: ${awayStatus}${dndInfo}\n` +
+        `│ Owner: ${ownerName}\n` +
+        `│ Inbox: ${inbox.length} pesan\n` +
+        `│ Memory: ${memMB} MB\n` +
+        `│ Uptime: ${formatUptime(process.uptime())}\n\n` +
+        `🤖 *AI Config*\n\n` +
+        `│ Groq: ${aiModel}\n` +
+        `│ Gemini: ${geminiModel}\n` +
+        `│ Style: ${replyStyle}\n` +
+        `│ Max Tokens: ${config.ai.maxTokens || 500}\n\n` +
+        `⏰ *Schedule*\n\n` +
+        `│ Away otomatis: ${scheduleStr}\n\n` +
+        `_Ketik *!help* untuk daftar command._`
     });
     return true;
   }
