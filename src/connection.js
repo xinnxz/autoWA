@@ -32,78 +32,58 @@ const AUTH_FOLDER = './auth_info';
  * Buat koneksi WhatsApp menggunakan Baileys
  * 
  * @param {Function} onMessage - Callback saat ada pesan masuk
+ * @param {Function} onQR - Callback saat QR code tersedia (untuk web display)
+ * @param {Function} onConnected - Callback saat berhasil terhubung
  * @returns {Promise<object>} Socket WhatsApp yang sudah terkoneksi
- * 
- * Penjelasan step-by-step:
- * 1. useMultiFileAuthState() → load/buat session credentials
- * 2. makeWASocket() → buat koneksi WebSocket ke WA
- * 3. Event 'connection.update' → handle QR code & status koneksi
- * 4. Event 'creds.update' → simpan session baru ke file
- * 5. Event 'messages.upsert' → terima pesan masuk
  */
-async function connectToWhatsApp(onMessage) {
-  // ─── 1. Load session credentials ───
-  // Jika sudah pernah scan QR, credentials akan di-load dari file
-  // Jika belum, akan generate credentials baru
+async function connectToWhatsApp(onMessage, onQR, onConnected) {
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_FOLDER);
 
-  // ─── 2. Ambil versi Baileys terbaru ───
   const { version } = await fetchLatestBaileysVersion();
   logger.info(`Menggunakan Baileys v${version.join('.')}`);
 
-  // ─── 3. Buat koneksi WebSocket ───
   const sock = makeWASocket({
     version,
     auth: {
       creds: state.creds,
-      // Cache signal keys untuk performa lebih baik
       keys: makeCacheableSignalKeyStore(state.keys, 
         pino({ level: 'silent' })
       ),
     },
-    // Logger Baileys di-set silent (biar terminal kita bersih)
     logger: pino({ level: 'silent' }),
-    // Jangan print QR di console Baileys (kita handle sendiri)
     printQRInTerminal: false,
-    // Penanda browser (agar WA tahu ini bot, bukan browser)
     browser: ['AutoWA Bot', 'Chrome', '1.0.0'],
-    // Tandai pesan sebagai "not from me" 
     generateHighQualityLinkPreview: false,
   });
 
-  // ─── 4. Handle connection updates ───
   sock.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect, qr } = update;
 
-    // Jika ada QR code → tampilkan di terminal
     if (qr) {
       console.log('');
       console.log('📱 Scan QR code ini dengan WhatsApp kamu:');
       console.log('   (Settings → Linked Devices → Link a Device)');
       console.log('');
       qrcode.generate(qr, { small: true });
+      // Kirim QR ke web page juga
+      if (onQR) onQR(qr);
     }
 
-    // Jika terkoneksi
     if (connection === 'open') {
       logger.info('✅ Terhubung ke WhatsApp!');
       logger.info(`📱 Logged in as: ${sock.user?.name || sock.user?.id}`);
+      if (onConnected) onConnected();
     }
 
-    // Jika terputus
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       const reason = DisconnectReason;
 
-      // Cek alasan disconnect
       if (statusCode === reason.loggedOut) {
-        // User logout dari HP → hapus session, harus scan QR ulang
         logger.error('Logged out dari WhatsApp! Hapus folder auth_info dan scan ulang.');
       } else {
-        // Koneksi putus karena alasan lain → auto reconnect
         logger.warn(`Koneksi terputus (code: ${statusCode}). Reconnecting...`);
-        // Reconnect setelah 3 detik
-        setTimeout(() => connectToWhatsApp(onMessage), 3000);
+        setTimeout(() => connectToWhatsApp(onMessage, onQR, onConnected), 3000);
       }
     }
   });
