@@ -19,7 +19,7 @@
 // - Max recipients per batch (dari config)
 // ============================================
 
-const config = require('../../config.json');
+const config = require('../../config.js');
 const { sendMessage } = require('../whatsapp');
 const logger = require('../utils/logger');
 

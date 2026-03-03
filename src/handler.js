@@ -20,7 +20,7 @@
 //       → Tidak: diam (kamu lagi aktif)
 // ============================================
 
-const config = require('../config.json');
+const config = require('../config.js');
 const logger = require('./utils/logger');
 const { handleCommand, isAway, addToInbox } = require('./features/botControl');
 const aiReply = require('./features/aiReply');

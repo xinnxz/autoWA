@@ -20,7 +20,7 @@
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Groq = require('groq-sdk');
-const config = require('../../config.json');
+const config = require('../../config.js');
 const logger = require('../utils/logger');
 
 // ─── Provider State ───

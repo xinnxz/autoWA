@@ -11,7 +11,7 @@
 // Command admin-only (!broadcast, !orders) dicek di handler.js
 // ============================================
 
-const config = require('../../config.json');
+const config = require('../../config.js');
 const { sendMessage } = require('../whatsapp');
 
 // Simpan waktu bot mulai (untuk hitung uptime)

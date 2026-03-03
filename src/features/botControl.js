@@ -17,7 +17,7 @@
 // PENTING: Command hanya bisa dijalankan oleh OWNER (kamu sendiri)
 // ============================================
 
-const config = require('../../config.json');
+const config = require('../../config.js');
 const logger = require('../utils/logger');
 
 // ─── State bot (disimpan di memory) ───

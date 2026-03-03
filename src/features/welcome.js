@@ -14,7 +14,7 @@
 // Untuk production, bisa diganti dengan database/file.
 // ============================================
 
-const config = require('../../config.json');
+const config = require('../../config.js');
 const { sendMessage } = require('../whatsapp');
 const logger = require('../utils/logger');
 

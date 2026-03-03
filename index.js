@@ -16,7 +16,7 @@ const express = require('express');
 const QRCode = require('qrcode');
 const { connectToWhatsApp } = require('./src/connection');
 const { handleMessage } = require('./src/handler');
-const config = require('./config.json');
+const config = require('./config.js');
 const logger = require('./src/utils/logger');
 
 const PORT = process.env.PORT || 3000;

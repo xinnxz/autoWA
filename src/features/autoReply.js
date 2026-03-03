@@ -16,7 +16,7 @@
 // - Partial match ("berapa harganya" cocok dengan keyword "harga")
 // ============================================
 
-const config = require('../../config.json');
+const config = require('../../config.js');
 const { sendMessage } = require('../whatsapp');
 
 /**
