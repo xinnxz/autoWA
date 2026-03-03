@@ -25,6 +25,7 @@ const botState = {
   awayMode: config.awayMode.enabled,   // Apakah away mode aktif
   dndUntil: null,                       // Timestamp kapan DND berakhir (null = tidak DND)
   dndTimer: null,                       // Timer reference untuk cancel DND
+  awayReason: '',                       // Alasan away (misal: 'tidur', 'meeting', 'kuliah')
 };
 
 // ─── Inbox: simpan pesan masuk saat away ───

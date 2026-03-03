@@ -127,26 +127,124 @@ function markLimited(provider, index) {
 }
 
 /**
- * Generate via Groq
+ * Bangun konteks dinamis berdasarkan waktu, hari, bulan
+ * AI jadi tau situasi owner tanpa perlu diketik manual
+ */
+function buildDynamicContext() {
+  const now = new Date();
+  const jakarta = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  const jam = jakarta.getHours();
+  const menit = jakarta.getMinutes();
+  const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][jakarta.getDay()];
+  const bulan = jakarta.getMonth(); // 0-11
+  const tanggal = jakarta.getDate();
+  const waktuStr = `${String(jam).padStart(2,'0')}:${String(menit).padStart(2,'0')} WIB`;
+
+  // Deteksi waktu
+  let waktu = '';
+  let aktivitas = '';
+  if (jam >= 3 && jam < 5) {
+    waktu = 'subuh/dini hari';
+    aktivitas = 'kemungkinan masih tidur atau baru bangun untuk sahur (jika puasa)';
+  } else if (jam >= 5 && jam < 7) {
+    waktu = 'pagi buta';
+    aktivitas = 'mungkin baru bangun, mandi, siap-siap beraktivitas';
+  } else if (jam >= 7 && jam < 12) {
+    waktu = 'pagi/menjelang siang';
+    aktivitas = 'kemungkinan lagi kerja, kuliah, atau meeting';
+  } else if (jam >= 12 && jam < 14) {
+    waktu = 'siang';
+    aktivitas = 'mungkin lagi istirahat makan siang, sholat dzuhur, atau break sebentar';
+  } else if (jam >= 14 && jam < 17) {
+    waktu = 'sore';
+    aktivitas = 'kemungkinan masih kerja/kuliah, atau lagi di perjalanan pulang';
+  } else if (jam >= 17 && jam < 19) {
+    waktu = 'menjelang maghrib';
+    aktivitas = 'mungkin lagi perjalanan pulang, istirahat, atau buka puasa (jika puasa)';
+  } else if (jam >= 19 && jam < 22) {
+    waktu = 'malam';
+    aktivitas = 'kemungkinan lagi santai, nonton, main game, atau ngerjain sesuatu';
+  } else {
+    waktu = 'larut malam';
+    aktivitas = 'kemungkinan sudah tidur atau begadang';
+  }
+
+  // Deteksi hari
+  let konteksHari = '';
+  if (hari === 'Jumat') {
+    konteksHari = 'Hari Jumat — mungkin sholat Jumat (jika jam 11-13).';
+  } else if (hari === 'Sabtu' || hari === 'Minggu') {
+    konteksHari = `Hari ${hari} (weekend) — kemungkinan libur, santai, atau hangout.`;
+  } else {
+    konteksHari = `Hari ${hari} (weekday) — kemungkinan hari kerja/kuliah biasa.`;
+  }
+
+  // Deteksi Ramadan (estimasi 2026: 18 Feb - 19 Mar)
+  let konteksRamadan = '';
+  if ((bulan === 1 && tanggal >= 18) || (bulan === 2 && tanggal <= 19)) {
+    konteksRamadan = 'Sekarang bulan Ramadan. Owner kemungkinan sedang puasa. ';
+    if (jam >= 3 && jam < 5) konteksRamadan += 'Mungkin lagi sahur atau habis sahur.';
+    else if (jam >= 17 && jam < 19) konteksRamadan += 'Sebentar lagi buka puasa.';
+    else if (jam >= 19 && jam < 21) konteksRamadan += 'Mungkin habis buka puasa atau sholat tarawih.';
+  }
+
+  return {
+    waktu,
+    waktuStr,
+    hari,
+    aktivitas,
+    konteksHari,
+    konteksRamadan,
+  };
+}
+
+/**
+ * Generate via Groq (DeepSeek R1)
  */
 async function callGroq(keyIdx, prompt, mode) {
   const client = providers.groq.clients[keyIdx];
   const ownerName = process.env.OWNER_NAME || 'Bot';
-  const systemPrompt = mode === 'contextual'
-    ? (config.ai.contextualPrompt || `Kamu adalah ${ownerName}. Balas santai, gaul. 1-2 kalimat. Jangan bilang kamu AI. Akhiri: _~autoreply by ${ownerName.toLowerCase()}_`)
-    : config.ai.systemPrompt;
+
+  let systemPrompt;
+  if (mode === 'contextual') {
+    const ctx = buildDynamicContext();
+    systemPrompt = `Kamu adalah ${ownerName}. Kamu BUKAN AI atau bot — kamu adalah manusia bernama ${ownerName}.
+Kamu sedang tidak bisa balas chat langsung karena HP kamu lagi ga dipegang.
+
+SITUASI SEKARANG:
+- Waktu: ${ctx.waktuStr} (${ctx.waktu})
+- ${ctx.konteksHari}
+${ctx.konteksRamadan ? '- ' + ctx.konteksRamadan : ''}- Kemungkinan aktivitas: ${ctx.aktivitas}
+
+CARA BALAS:
+- Balas seolah kamu ${ownerName} yang lagi AFK
+- Pake bahasa Indonesia sehari-hari, gaul, santai, casual
+- Jawab singkat 1-3 kalimat aja
+- Sesuaikan jawaban dengan situasi waktu sekarang (misal kalo malam bilang lagi tidur, kalo siang bilang lagi kerja/kuliah)
+- Boleh pake emoji dikit
+- JANGAN PERNAH bilang kamu AI, bot, atau autoreply
+- Kalo ditanya sesuatu yang ga tau, bilang "ntar gw kabarin ya" atau "gw cek dulu ya"
+- Di akhir pesan SELALU tambah baris baru lalu tulis: _~autoreply by ${ownerName.toLowerCase()}_`;
+  } else {
+    systemPrompt = config.ai.systemPrompt;
+  }
 
   const completion = await client.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: 'deepseek-r1-distill-llama-70b',
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: prompt },
     ],
     max_tokens: config.ai.maxTokens || 500,
-    temperature: 0.7,
+    temperature: 0.6,
   });
 
-  return completion.choices[0]?.message?.content || '';
+  let reply = completion.choices[0]?.message?.content || '';
+  
+  // DeepSeek R1 kadang output <think>...</think> tags, hapus
+  reply = reply.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+
+  return reply;
 }
 
 /**
