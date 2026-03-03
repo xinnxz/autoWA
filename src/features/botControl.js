@@ -34,6 +34,20 @@ const runtimeOverrides = {
   model: null,       // null = pakai dari config.js
 };
 
+// ─── Model aliases (shortcut nama model) ───
+const MODEL_ALIASES = {
+  'gpt':       'openai/gpt-oss-120b',
+  'gpt120':    'openai/gpt-oss-120b',
+  'gpt20':     'openai/gpt-oss-20b',
+  'llama':     'llama-3.3-70b-versatile',
+  'llama70':   'llama-3.3-70b-versatile',
+  'llama8':    'llama-3.1-8b-instant',
+  'qwen':      'qwen/qwen3-32b',
+  'kimi':      'moonshotai/kimi-k2-instruct',
+  'maverick':  'meta-llama/llama-4-maverick-17b-128e-instruct',
+  'scout':     'meta-llama/llama-4-scout-17b-16e-instruct',
+};
+
 // ─── Inbox: simpan pesan masuk saat away ───
 // Format: [{ from: '628xxx', name: 'John', text: 'Halo', time: Date }]
 const inbox = [];
@@ -118,14 +132,21 @@ async function handleCommand(sock, msg) {
 │ !style <gaya> — Ganti gaya bahasa
 │ !model <model> — Ganti model AI
 
-*Style tersedia:*
-│ gaul — lo-gue, slang, emoji
-│ santai — gw-kamu, casual
-│ formal — saya-anda, sopan
-│ campur — mix tergantung konteks
-│ custom <teks> — bebas tulis sendiri
+*Style:*
+│ gaul / santai / formal / campur
+│ custom <teks> — bebas tulis
 
-_Aktif: style=${currentStyle} | model=${currentModel}_`;
+*Model:*
+│ gpt — GPT-OSS 120B (terpintar)
+│ gpt20 — GPT-OSS 20B
+│ llama — Llama 3.3 70B
+│ llama8 — Llama 3.1 8B (tercepat)
+│ qwen — Qwen3 32B
+│ kimi — Kimi K2
+│ maverick — Llama 4 Maverick
+│ scout — Llama 4 Scout
+
+_style=${currentStyle} | model=${currentModel}_`;
     await sock.sendMessage(msg.from, { text: helpText });
     return true;
   }
@@ -296,23 +317,28 @@ _Aktif: style=${currentStyle} | model=${currentModel}_`;
 
   // ─── !model → Ganti model AI ───
   if (text.startsWith('!model')) {
-    const newModel = text.replace('!model', '').trim();
+    const input = text.replace('!model', '').trim();
     
-    if (!newModel) {
+    if (!input) {
       const currentModel = runtimeOverrides.model || config.ai.model || 'default';
       await sock.sendMessage(msg.from, { 
         text: `🤖 *AI Model*\n\n` +
           `Aktif: *${currentModel}*\n\n` +
-          `*Contoh:*\n` +
-          `│ !model openai/gpt-oss-120b\n` +
-          `│ !model llama-3.3-70b-versatile\n` +
-          `│ !model qwen/qwen3-32b\n` +
+          `*Shortcut:*\n` +
+          `│ !model gpt — GPT-OSS 120B\n` +
+          `│ !model gpt20 — GPT-OSS 20B\n` +
+          `│ !model llama — Llama 3.3 70B\n` +
+          `│ !model llama8 — Llama 3.1 8B\n` +
+          `│ !model qwen — Qwen3 32B\n` +
+          `│ !model kimi — Kimi K2\n` +
+          `│ !model maverick — Llama 4 Maverick\n` +
+          `│ !model scout — Llama 4 Scout\n` +
           `│ !model reset`
       });
       return true;
     }
 
-    if (newModel === 'reset') {
+    if (input === 'reset') {
       runtimeOverrides.model = null;
       await sock.sendMessage(msg.from, { 
         text: `✅ Model dikembalikan ke config: *${config.ai.model || 'default'}*` 
@@ -321,11 +347,14 @@ _Aktif: style=${currentStyle} | model=${currentModel}_`;
       return true;
     }
 
-    runtimeOverrides.model = newModel;
+    // Resolve alias atau pakai langsung
+    const resolvedModel = MODEL_ALIASES[input] || input;
+    runtimeOverrides.model = resolvedModel;
+    const alias = MODEL_ALIASES[input] ? ` (${input})` : '';
     await sock.sendMessage(msg.from, { 
-      text: `✅ Model diubah ke: *${newModel}*\n\n_Berlaku langsung. Ketik !model reset untuk kembalikan._` 
+      text: `✅ Model diubah ke: *${resolvedModel}*${alias}\n\n_Berlaku langsung. Ketik !model reset untuk kembalikan._` 
     });
-    logger.info(`AI model: ${newModel}`);
+    logger.info(`AI model: ${resolvedModel}`);
     return true;
   }
 
