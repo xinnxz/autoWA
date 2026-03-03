@@ -1,30 +1,46 @@
+<div align="center">
+
 # AutoWA Bot
 
-Bot auto-reply WhatsApp pribadi pake Baileys + AI (Groq/Gemini).
+**Personal WhatsApp Auto-Reply Bot**
 
-Kalo kamu lagi tidur, meeting, atau sibuk, bot ini bales chat masuk otomatis. Pake AI jadi balasannya nyambung, bukan template doang.
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
+[![Baileys](https://img.shields.io/badge/Baileys-WebSocket-25D366?style=flat-square&logo=whatsapp&logoColor=white)](https://github.com/WhiskeySockets/Baileys)
+[![Groq](https://img.shields.io/badge/Groq-AI_Engine-F55036?style=flat-square&logo=groq&logoColor=white)](https://groq.com)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
+[![Deploy](https://img.shields.io/badge/Deploy-Koyeb-4c4c4c?style=flat-square&logo=koyeb&logoColor=white)](https://www.koyeb.com)
+
+Bot yang auto-reply chat WhatsApp kamu pas lagi tidur, meeting, atau sibuk.<br>
+Pake AI biar balasannya nyambung — bukan template.
+
+[Cara Pakai](#cara-pakai) · [Deploy ke Cloud](#deploy-ke-cloud-koyeb) · [Commands](#bot-commands) · [Konfigurasi](#konfigurasi)
+
+</div>
 
 ---
 
 ## Fitur
 
-- **AI Contextual Reply** — Groq/Gemini bales sesuai isi chat, seolah kamu yang jawab
-- **Multi-Provider AI** — Groq (primary) + Gemini (fallback) dengan key rotation
-- **DND Mode** — ketik `!dnd 2h` bot aktif 2 jam terus mati sendiri
-- **On/Off Toggle** — kontrol bot dari chat (`!on` / `!off`)
-- **Inbox Summary** — rangkuman siapa aja yang chat pas kamu away
-- **Scheduled Away** — otomatis aktif pas jam tidur
-- **Keyword Auto-Reply** — reply otomatis berdasarkan kata kunci tertentu
-- **Anti-Ban Safety** — ada delay, cooldown, ignore group
+| Fitur | Deskripsi |
+|-------|-----------|
+| **AI Contextual Reply** | Groq/Gemini bales sesuai isi chat, seolah kamu yang jawab |
+| **Multi-Provider AI** | Groq (primary) + Gemini (fallback) dengan key rotation otomatis |
+| **DND Mode** | `!dnd 2h` — bot aktif 2 jam terus mati sendiri |
+| **On/Off Toggle** | Kontrol bot dari chat (`!on` / `!off`) |
+| **Inbox Summary** | Rangkuman siapa aja yang chat pas kamu away |
+| **Scheduled Away** | Otomatis aktif pas jam tidur |
+| **Keyword Auto-Reply** | Reply otomatis berdasarkan kata kunci tertentu |
+| **Anti-Ban Safety** | Delay, cooldown, ignore group — biar aman |
+| **Web QR Scanner** | Scan QR dari browser (buat deploy cloud) |
 
 ---
 
-## Cara Pakai (Lokal)
+## Cara Pakai
 
 ### 1. Clone repo
 
 ```bash
-git clone https://github.com/ximxz/autoWA.git
+git clone https://github.com/xinnxz/autoWA.git
 cd autoWA
 npm install
 ```
@@ -35,7 +51,7 @@ npm install
 cp .env.example .env
 ```
 
-Buka file `.env`, isi:
+Buka file `.env`, isi yang ini:
 
 ```env
 OWNER_NUMBER=628xxxxxxxxxx
@@ -43,7 +59,8 @@ OWNER_NAME=NamaKamu
 GROQ_API_KEY_1=gsk_xxx
 ```
 
-Buat API key Groq di [console.groq.com/keys](https://console.groq.com/keys). Gratis. Bisa isi banyak key buat rotasi (anti rate-limit).
+> API key Groq bisa dibuat gratis di [console.groq.com/keys](https://console.groq.com/keys).
+> Bisa isi banyak key buat rotasi (anti rate-limit).
 
 ### 3. Jalankan
 
@@ -55,17 +72,18 @@ Muncul QR code di terminal. Scan pake WhatsApp (Settings > Linked Devices > Link
 
 ---
 
-## Deploy ke Cloud (Koyeb) — Gratis 24/7
+## Deploy ke Cloud (Koyeb)
 
 Kalo mau bot nya jalan terus walau PC mati, deploy ke Koyeb. Gratis.
+
+<details>
+<summary><b>Klik untuk lihat langkah deploy</b></summary>
 
 ### Step 1 — Buat akun Koyeb
 
 Buka [koyeb.com](https://www.koyeb.com), sign up. Verifikasi kartu (ditarik $1 terus langsung di-refund).
 
 ### Step 2 — Push repo ke GitHub
-
-Kalo belum punya repo:
 
 ```bash
 git init
@@ -80,28 +98,26 @@ git push -u origin main
 
 1. Login ke [app.koyeb.com](https://app.koyeb.com)
 2. Klik **Create Service** > **Web service**
-3. Pilih **GitHub** > connect akun GitHub kamu > pilih repo `autoWA`
+3. Pilih **GitHub** > connect akun GitHub > pilih repo `autoWA`
 4. Branch: `main`
-5. Builder: **Buildpack** (default, ga perlu diubah)
-6. Build command: biarkan default
-7. Run command: biarkan default
-8. Klik **Next**
+5. Builder: **Buildpack** (default)
+6. Build/Run command: biarkan default
+7. Klik **Next**
 
 ### Step 4 — Isi Environment Variables
 
-Ini bagian paling penting. Klik **Environment variables**, tambahkan:
+Tambahkan semua variable yang dibutuhin:
 
 ```
 OWNER_NUMBER = 6281234567890
 OWNER_NAME = NamaKamu
 GROQ_API_KEY_1 = gsk_xxxxx
 GROQ_API_KEY_2 = gsk_xxxxx
-GROQ_API_KEY_3 = gsk_xxxxx
 ```
 
-Isi semua Groq key kamu. Minimal 1, idealnya banyak biar ga kena rate limit.
+Isi semua Groq key. Minimal 1.
 
-Kalo punya Gemini key juga, tambahin:
+Kalo punya Gemini key juga bisa ditambahin:
 
 ```
 GEMINI_API_KEY_1 = AIzaxxxxx
@@ -110,23 +126,25 @@ GEMINI_API_KEY_1 = AIzaxxxxx
 ### Step 5 — Pilih instance
 
 - Instance type: **Free** (Nano)
-- Region: terserah, yang deket aja (Washington atau Singapore)
+- Region: terserah
 - Scaling: biarkan default
 
 ### Step 6 — Deploy
 
-Klik **Deploy**. Tunggu 2-3 menit sampe build selesai.
+Klik **Deploy**. Tunggu 2-3 menit.
 
 ### Step 7 — Scan QR dari browser
 
-Setelah deploy selesai, Koyeb kasih URL (contoh: `https://autowa-xxxxx.koyeb.app`).
-
-1. Buka URL itu di browser
-2. Muncul QR code
-3. Scan pake WhatsApp (Settings > Linked Devices > Link a Device)
-4. Kalo udah connected, halaman berubah jadi "Bot Terhubung"
+1. Koyeb kasih URL publik (contoh: `https://autowa-xxxxx.koyeb.app`)
+2. Buka URL itu di browser — muncul QR code dengan countdown timer
+3. Scan pake WhatsApp
+4. Halaman berubah jadi "Bot Terhubung"
 
 Selesai. Bot jalan 24/7.
+
+> Kalau Koyeb restart, tinggal buka URL lagi dan scan ulang. Bot tetap running, cuma perlu re-pair aja.
+
+</details>
 
 ---
 
@@ -136,54 +154,64 @@ Kirim dari chat ke diri sendiri di WhatsApp:
 
 | Command | Fungsi |
 |---------|--------|
-| `!off` | aktifkan away mode (bot mulai reply) |
-| `!on` | matikan away mode (bot diam) |
-| `!dnd 2h` | away mode 2 jam, mati otomatis |
-| `!dnd 30m` | away mode 30 menit |
-| `!status` | cek status bot sekarang |
-| `!inbox` | lihat rangkuman chat masuk pas away |
-| `!inbox clear` | hapus inbox |
-| `!ai <pertanyaan>` | tanya AI langsung |
+| `!off` | Aktifkan away mode (bot mulai reply) |
+| `!on` | Matikan away mode (bot diam) |
+| `!dnd 2h` | Away mode 2 jam, mati otomatis |
+| `!dnd 30m` | Away mode 30 menit |
+| `!status` | Cek status bot sekarang |
+| `!inbox` | Lihat rangkuman chat masuk pas away |
+| `!inbox clear` | Hapus inbox |
+| `!ai <pertanyaan>` | Tanya AI langsung |
+| `!logout` | Logout dari WhatsApp (perlu scan QR ulang) |
+
+> Commands cuma bisa dijalankan oleh owner.
 
 ---
 
 ## AI Key Rotation
 
-Bot support banyak API key yang dirotasi otomatis. Kalo satu key kena rate limit, langsung pindah ke key berikutnya.
+Bot support banyak API key yang dirotasi otomatis. Kalo satu key kena rate limit, langsung switch ke key berikutnya.
 
 ```env
-# Groq (primary) — dari console.groq.com/keys
+# Groq (primary)
 GROQ_API_KEY_1=gsk_xxx
 GROQ_API_KEY_2=gsk_xxx
 GROQ_API_KEY_3=gsk_xxx
 
-# Gemini (fallback, opsional) — dari aistudio.google.com/apikey
+# Gemini (fallback, opsional)
 GEMINI_API_KEY_1=AIza_xxx
 GEMINI_API_KEY_2=AIza_xxx
 ```
 
-Urutan pemakaian: `Groq 1 > 2 > ... > N > Gemini 1 > 2 > ... > N > Template`
+```
+Urutan: Groq 1 > 2 > ... > N > Gemini 1 > 2 > ... > N > Template message
+```
 
 ---
 
 ## Konfigurasi
 
-Edit `config.json` buat customize:
+Edit `config.json`:
 
-- `awayMode.messages` — ubah pesan auto-reply
-- `awayMode.schedule` — jam tidur (kapan bot aktif otomatis)
-- `safety.replyDelay` — delay sebelum reply (dalam ms)
-- `safety.maxRepliesPerContact` — max berapa kali reply ke 1 orang
-- `autoReplies` — keyword-based auto-reply
+| Setting | Deskripsi |
+|---------|-----------|
+| `awayMode.messages` | Daftar pesan auto-reply |
+| `awayMode.schedule` | Jam tidur (kapan bot aktif otomatis) |
+| `safety.replyDelay` | Delay sebelum reply (ms) |
+| `safety.maxRepliesPerContact` | Max reply per kontak |
+| `safety.cooldownPerContact` | Cooldown antar reply (detik) |
+| `autoReplies` | Keyword-based auto-reply rules |
+| `ai.contextualMode` | AI reply seolah-olah kamu yang bales |
+| `ai.contextualPrompt` | Prompt untuk AI contextual mode |
 
 ---
 
-## Tips Anti-Ban
+## Anti-Ban
 
 - Bot cuma reply, ga pernah kirim chat duluan
-- Group chat diabaikan (ngurangin aktivitas)
+- Group chat diabaikan
 - Max 3 reply per kontak per 5 menit
-- Ada delay sebelum reply (configurable)
+- Ada delay sebelum reply
 - Jangan broadcast ke banyak nomor
 - Jangan spam link atau promosi
 
@@ -215,6 +243,10 @@ autoWA/
 
 MIT
 
-## Disclaimer
+---
 
-Bot ini buat pemakaian pribadi. Kalo dipake buat spam atau ngelanggar ToS WhatsApp, itu tanggung jawab kamu sendiri. Pake yang wajar aja.
+<div align="center">
+
+**Disclaimer** — Bot ini buat pemakaian pribadi. Kalo dipake buat spam atau ngelanggar ToS WhatsApp, itu tanggung jawab kamu sendiri.
+
+</div>
