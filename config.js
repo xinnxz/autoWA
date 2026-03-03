@@ -64,7 +64,7 @@ module.exports = {
     //   "formal"  → saya-kamu/anda, sopan dan profesional
     //   "campur"  → campur gaul + formal, tergantung konteks
     //   atau tulis custom sendiri, misal: "bahasa sunda kasar" / "english casual"
-    replyStyle: "santai",
+    replyStyle: "formal",
 
     prefix: "!ai",              // Command untuk tanya AI langsung (misal: !ai apa itu javascript)
 
