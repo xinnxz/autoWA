@@ -59,6 +59,65 @@ const providers = {
 // Groq duluan karena lebih cepat
 const providerOrder = ['groq', 'gemini'];
 
+// ─── Chat History (conversation memory per kontak) ───
+// Key: contactId (628xxx@s.whatsapp.net)
+// Value: [{ role: 'user'|'assistant', content: string, time: number }]
+const chatHistory = new Map();
+
+// Auto-cleanup history yang expired
+const historyCleanupMs = 10 * 60 * 1000; // Tiap 10 menit
+setInterval(() => {
+  const maxAge = (config.ai.chatHistory?.maxAge || 30) * 60 * 1000;
+  const now = Date.now();
+  let cleaned = 0;
+  for (const [contactId, messages] of chatHistory) {
+    // Hapus pesan yang terlalu lama
+    const fresh = messages.filter(m => (now - m.time) < maxAge);
+    if (fresh.length === 0) {
+      chatHistory.delete(contactId);
+      cleaned++;
+    } else if (fresh.length !== messages.length) {
+      chatHistory.set(contactId, fresh);
+    }
+  }
+  if (cleaned > 0) logger.debug(`History cleanup: ${cleaned} conversations cleared`);
+}, historyCleanupMs);
+
+/**
+ * Get chat history untuk kontak tertentu
+ */
+function getHistory(contactId) {
+  if (!config.ai.chatHistory?.enabled) return [];
+  return chatHistory.get(contactId) || [];
+}
+
+/**
+ * Tambah pesan ke history
+ */
+function addToHistory(contactId, role, content) {
+  if (!config.ai.chatHistory?.enabled) return;
+  const maxMessages = config.ai.chatHistory?.maxMessages || 6;
+  
+  if (!chatHistory.has(contactId)) chatHistory.set(contactId, []);
+  const history = chatHistory.get(contactId);
+  history.push({ role, content, time: Date.now() });
+  
+  // Trim kalo melebihi max
+  while (history.length > maxMessages) history.shift();
+}
+
+/**
+ * Clear semua history atau per kontak
+ */
+function clearHistory(contactId) {
+  if (contactId) {
+    chatHistory.delete(contactId);
+  } else {
+    chatHistory.clear();
+  }
+  return chatHistory.size;
+}
+
 /**
  * Load semua API keys dari .env
  * Detect format: PROVIDER_API_KEY_1, _2, ... (numbered)
@@ -266,7 +325,7 @@ function buildDynamicContext() {
 /**
  * Generate via Groq (DeepSeek R1)
  */
-async function callGroq(keyIdx, prompt, mode) {
+async function callGroq(keyIdx, prompt, mode, history = []) {
   const client = providers.groq.clients[keyIdx];
   const ownerName = process.env.OWNER_NAME || 'Bot';
   const locale = getLocale();
@@ -277,12 +336,10 @@ async function callGroq(keyIdx, prompt, mode) {
     const ctx = buildDynamicContext();
     const style = getOverrides().replyStyle || config.ai.replyStyle || 'santai';
 
-    // Ambil style dari locale (preset atau custom)
     const styleObj = getStyle(style);
     const intro = styleObj ? styleObj.intro(ownerName) : locale.customIntro(ownerName);
     const personality = styleObj ? styleObj.personality : locale.customPersonality;
     const rules = styleObj ? styleObj.rules(ownerName) : locale.customRules(style);
-    const closing = P.closing(ownerName);
 
     systemPrompt = `${intro}
 
@@ -302,12 +359,16 @@ ${P.closingRule(ownerName)}`;
     systemPrompt = config.ai.systemPrompt;
   }
 
+  // Build messages: system + chat history + current user message
+  const messages = [{ role: 'system', content: systemPrompt }];
+  for (const h of history) {
+    messages.push({ role: h.role, content: h.content });
+  }
+  messages.push({ role: 'user', content: prompt });
+
   const completion = await client.chat.completions.create({
     model: getOverrides().model || config.ai.model || 'llama-3.3-70b-versatile',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: prompt },
-    ],
+    messages,
     max_tokens: config.ai.maxTokens || 500,
     temperature: 0.6,
   });
@@ -340,7 +401,7 @@ async function callGemini(keyIdx, prompt, mode) {
  * 3. Kalau semua key provider habis → lanjut provider berikutnya
  * 4. Kalau semua provider habis → throw error
  */
-async function generateWithRotation(prompt, mode = 'prefix') {
+async function generateWithRotation(prompt, mode = 'prefix', history = []) {
   if (providers.groq.keys.length === 0 && providers.gemini.keys.length === 0) loadKeys();
 
   let lastError = null;
@@ -351,14 +412,14 @@ async function generateWithRotation(prompt, mode = 'prefix') {
 
     for (let attempt = 0; attempt < p.keys.length; attempt++) {
       const keyIdx = getAvailableKey(providerName);
-      if (keyIdx === -1) break; // Semua key cooldown, coba provider lain
+      if (keyIdx === -1) break;
 
       try {
         logger.debug(`${p.name} key ${keyIdx + 1}/${p.keys.length}`);
         
         let result;
         if (providerName === 'groq') {
-          result = await callGroq(keyIdx, prompt, mode);
+          result = await callGroq(keyIdx, prompt, mode, history);
         } else {
           result = await callGemini(keyIdx, prompt, mode);
         }
@@ -413,17 +474,26 @@ async function handle(sock, msg) {
  */
 async function handleContextual(sock, msg, opts = {}) {
   try {
-    // Temporarily override style for this call if group has custom style
+    // Temporarily override style
     let prevStyle = null;
     if (opts.groupStyle) {
       prevStyle = getOverrides().replyStyle;
       getOverrides().replyStyle = opts.groupStyle;
     }
 
-    const prompt = `${msg.name} mengirim pesan: "${msg.text}"\n\nBalas pesan ini.`;
-    const aiText = await generateWithRotation(prompt, 'contextual');
+    const contactId = msg.from;
+    const history = getHistory(contactId);
 
-    // Restore style after generating
+    // Save user message to history
+    addToHistory(contactId, 'user', msg.text);
+
+    const prompt = `${msg.name} mengirim pesan: "${msg.text}"\n\nBalas pesan ini.`;
+    const aiText = await generateWithRotation(prompt, 'contextual', history);
+
+    // Save bot reply to history
+    addToHistory(contactId, 'assistant', aiText);
+
+    // Restore style
     if (opts.groupStyle && prevStyle !== undefined) {
       getOverrides().replyStyle = prevStyle;
     }
@@ -442,4 +512,4 @@ async function handleContextual(sock, msg, opts = {}) {
   }
 }
 
-module.exports = { handle, handleContextual };
+module.exports = { handle, handleContextual, clearHistory };

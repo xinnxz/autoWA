@@ -414,6 +414,25 @@ ${L.helpFooter(currentStyle, currentModel)}`;
     process.exit(0);
   }
 
+  // ─── !history → Kelola chat history AI ───
+  if (text.startsWith('!history')) {
+    const args = text.replace('!history', '').trim();
+
+    if (args === 'clear') {
+      // Lazy-load untuk hindari circular dependency
+      const { clearHistory } = require('./aiReply');
+      clearHistory();
+      await sock.sendMessage(msg.from, { text: '🗑️ Chat history cleared! AI mulai fresh.' });
+      logger.info('Chat history cleared by owner');
+      return true;
+    }
+
+    await sock.sendMessage(msg.from, {
+      text: `🧠 *Chat History*\n\nAI menyimpan riwayat percakapan agar jawaban lebih nyambung.\n\n│ !history clear — Hapus semua riwayat\n\n_History otomatis dihapus setelah ${config.ai.chatHistory?.maxAge || 30} menit._`
+    });
+    return true;
+  }
+
   // ─── !group → Kontrol bot di group ───
   if (text.startsWith('!group')) {
     const args = text.replace('!group', '').trim();

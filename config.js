@@ -102,6 +102,13 @@ module.exports = {
     contextualPrompt: "",
 
     maxTokens: 500,             // Max panjang jawaban AI (dalam token)
+
+    // Chat history — AI ingat percakapan sebelumnya per kontak
+    chatHistory: {
+      enabled: true,              // true = AI ingat chat sebelumnya
+      maxMessages: 6,              // Simpan max 6 pesan (3 user + 3 bot)
+      maxAge: 30,                  // Hapus history yang lebih dari X menit
+    },
   },
 
   // ─── KEAMANAN / ANTI-BAN ───
