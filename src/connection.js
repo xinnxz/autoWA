@@ -25,8 +25,9 @@ const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 const logger = require('./utils/logger');
 
-// Folder untuk simpan session auth (agar tidak scan QR terus)
-const AUTH_FOLDER = './auth_info';
+// Folder untuk simpan session auth
+// Di cloud (Koyeb), set AUTH_DIR ke path volume agar session persistent
+const AUTH_FOLDER = process.env.AUTH_DIR || './auth_info';
 
 /**
  * Buat koneksi WhatsApp menggunakan Baileys
