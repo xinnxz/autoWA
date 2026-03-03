@@ -94,25 +94,58 @@ app.get('/', async (req, res) => {
   res.send(`
     <html>
     <head><title>AutoWA Bot — Scan QR</title>
-    <meta http-equiv="refresh" content="15">
     <style>
       body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; 
              display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
       .card { background: #1a1a2e; padding: 40px; border-radius: 16px; text-align: center; 
-              box-shadow: 0 8px 32px rgba(0,100,255,0.2); }
+              box-shadow: 0 8px 32px rgba(0,100,255,0.2); max-width: 400px; }
       img { border-radius: 12px; margin: 16px 0; }
       h2 { color: #4fc3f7; margin-bottom: 8px; }
       p { color: #888; font-size: 14px; }
-      .step { color: #fff; text-align: left; margin-top: 16px; font-size: 13px; }
-      .step li { margin: 4px 0; }
+      .timer { font-size: 32px; font-weight: bold; color: #4fc3f7; margin: 8px 0; }
+      .timer.warning { color: #ffa726; }
+      .timer.danger { color: #ef5350; }
+      .progress-bar { width: 100%; height: 4px; background: #333; border-radius: 2px; margin: 12px 0; overflow: hidden; }
+      .progress-fill { height: 100%; background: #4fc3f7; border-radius: 2px; transition: width 1s linear, background 1s; }
+      .progress-fill.warning { background: #ffa726; }
+      .progress-fill.danger { background: #ef5350; }
+      .expired { color: #ef5350; font-size: 18px; font-weight: bold; }
     </style></head>
     <body>
       <div class="card">
-        <h2>📱 Scan QR Code</h2>
-        <p>Buka WhatsApp di HP → Settings → Linked Devices → Link a Device</p>
+        <h2>Scan QR Code</h2>
+        <p>Buka WhatsApp > Settings > Linked Devices > Link a Device</p>
         <img src="${qrImage}" alt="QR Code" />
-        <p>QR expires in ~60 detik. Halaman auto-refresh.</p>
+        <div class="timer" id="timer">60</div>
+        <div class="progress-bar"><div class="progress-fill" id="bar" style="width:100%"></div></div>
+        <p id="label">detik tersisa</p>
       </div>
+      <script>
+        let sec = 60;
+        const timer = document.getElementById('timer');
+        const bar = document.getElementById('bar');
+        const label = document.getElementById('label');
+        setInterval(() => {
+          sec--;
+          if (sec <= 0) {
+            timer.textContent = 'Expired';
+            timer.className = 'expired';
+            bar.style.width = '0%';
+            label.textContent = 'Halaman refresh otomatis...';
+            setTimeout(() => location.reload(), 2000);
+            return;
+          }
+          timer.textContent = sec;
+          bar.style.width = (sec / 60 * 100) + '%';
+          if (sec <= 10) {
+            timer.className = 'timer danger';
+            bar.className = 'progress-fill danger';
+          } else if (sec <= 25) {
+            timer.className = 'timer warning';
+            bar.className = 'progress-fill warning';
+          }
+        }, 1000);
+      </script>
     </body></html>
   `);
 });
