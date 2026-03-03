@@ -211,6 +211,31 @@ async function handleCommand(sock, msg) {
     return true;
   }
 
+  // --- !logout --- Logout dari WhatsApp ---
+  if (text.startsWith('!logout')) {
+    if (!text.includes('confirm')) {
+      await sock.sendMessage(msg.from, {
+        text: '*Yakin mau logout?*\n\nBot akan disconnect dan perlu scan QR lagi.\n\nKetik *!logout confirm* untuk konfirmasi.'
+      });
+      return true;
+    }
+
+    await sock.sendMessage(msg.from, { text: 'Logging out... bye!' });
+    logger.info('Owner meminta logout');
+
+    // Hapus session
+    const fs = require('fs');
+    const path = require('path');
+    const authDir = process.env.AUTH_DIR || './auth_info';
+    if (fs.existsSync(authDir)) {
+      fs.rmSync(authDir, { recursive: true, force: true });
+      logger.info('Session auth dihapus');
+    }
+
+    await sock.logout();
+    process.exit(0);
+  }
+
   return false; // Bukan command
 }
 
