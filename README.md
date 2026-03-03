@@ -2,7 +2,7 @@
 
 # AutoWA Bot
 
-**Personal WhatsApp Auto-Reply Bot**
+**Smart WhatsApp Auto-Reply Bot with AI**
 
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Baileys](https://img.shields.io/badge/Baileys-WebSocket-25D366?style=flat-square&logo=whatsapp&logoColor=white)](https://github.com/WhiskeySockets/Baileys)
@@ -10,10 +10,10 @@
 [![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)](LICENSE)
 [![Deploy](https://img.shields.io/badge/Deploy-Koyeb-4c4c4c?style=flat-square&logo=koyeb&logoColor=white)](https://www.koyeb.com)
 
-Bot yang auto-reply chat WhatsApp kamu pas lagi tidur, meeting, atau sibuk.<br>
-Pake AI biar balasannya nyambung — bukan template.
+Bot yang otomatis bales chat WhatsApp kamu pas lagi tidur, meeting, atau sibuk.<br>
+Pake AI biar balasannya nyambung dan natural — bukan template kaku.
 
-[Cara Pakai](#cara-pakai) · [Deploy ke Cloud](#deploy-ke-cloud-koyeb) · [Commands](#bot-commands) · [Konfigurasi](#konfigurasi)
+[Cara Pakai](#cara-pakai) · [Deploy ke Cloud](#deploy-ke-cloud-koyeb) · [Commands](#bot-commands) · [AI & Gaya Bahasa](#ai--gaya-bahasa) · [Konfigurasi](#konfigurasi)
 
 </div>
 
@@ -23,15 +23,19 @@ Pake AI biar balasannya nyambung — bukan template.
 
 | Fitur | Deskripsi |
 |-------|-----------|
-| **AI Contextual Reply** | Groq/Gemini bales sesuai isi chat, seolah kamu yang jawab |
+| **AI Contextual Reply** | AI bales sesuai isi chat, seolah kamu yang jawab |
+| **Context-Aware** | AI tau waktu, hari, event (Ramadan, hari besar), dan aktivitas kamu |
 | **Multi-Provider AI** | Groq (primary) + Gemini (fallback) dengan key rotation otomatis |
+| **Gaya Bahasa Custom** | Pilih: gaul, santai, formal, campur, atau tulis custom sendiri |
 | **DND Mode** | `!dnd 2h` — bot aktif 2 jam terus mati sendiri |
 | **On/Off Toggle** | Kontrol bot dari chat (`!on` / `!off`) |
 | **Inbox Summary** | Rangkuman siapa aja yang chat pas kamu away |
 | **Scheduled Away** | Otomatis aktif pas jam tidur |
 | **Keyword Auto-Reply** | Reply otomatis berdasarkan kata kunci tertentu |
 | **Anti-Ban Safety** | Delay, cooldown, ignore group — biar aman |
-| **Web QR Scanner** | Scan QR dari browser (buat deploy cloud) |
+| **Web QR Scanner** | Scan QR dari browser dengan countdown timer (buat cloud) |
+| **Auto Memory Cleanup** | Inbox dan tracker otomatis dibersihkan biar server ga penuh |
+| **Keep-Alive** | Anti-sleep untuk cloud hosting gratis |
 
 ---
 
@@ -62,7 +66,18 @@ GROQ_API_KEY_1=gsk_xxx
 > API key Groq bisa dibuat gratis di [console.groq.com/keys](https://console.groq.com/keys).
 > Bisa isi banyak key buat rotasi (anti rate-limit).
 
-### 3. Jalankan
+### 3. Konfigurasi (opsional)
+
+Buka `config.js` — tiap setting udah ada comment penjelasannya. Yang paling penting:
+
+```js
+ai: {
+  replyStyle: "santai",              // gaul, santai, formal, campur, atau custom
+  model: "openai/gpt-oss-120b",     // model AI di Groq
+}
+```
+
+### 4. Jalankan
 
 ```bash
 npm start
@@ -169,46 +184,80 @@ Kirim dari chat ke diri sendiri di WhatsApp:
 
 ---
 
-## AI Key Rotation
+## AI & Gaya Bahasa
 
-Bot support banyak API key yang dirotasi otomatis. Kalo satu key kena rate limit, langsung switch ke key berikutnya.
+### Model AI
+
+Bot pake 2 provider AI dengan sistem fallback otomatis:
+
+```
+Groq (primary) → Gemini (fallback) → Template message (last resort)
+```
+
+Model bisa diganti di `config.js`:
+
+```js
+model: "openai/gpt-oss-120b",       // Groq — paling pintar
+geminiModel: "gemini-2.5-flash",     // Gemini — fallback terbaru
+```
+
+### Key Rotation
+
+Bisa isi banyak API key. Kalo satu kena rate limit, otomatis pindah ke berikutnya:
 
 ```env
-# Groq (primary)
 GROQ_API_KEY_1=gsk_xxx
 GROQ_API_KEY_2=gsk_xxx
 GROQ_API_KEY_3=gsk_xxx
-
-# Gemini (fallback, opsional)
 GEMINI_API_KEY_1=AIza_xxx
-GEMINI_API_KEY_2=AIza_xxx
 ```
 
+### Gaya Bahasa
+
+Setiap user bisa pilih gaya bahasa sesuai kepribadian di `config.js`:
+
+| Style | Contoh |
+|-------|--------|
+| `"gaul"` | "woy maap bro lg gabisa bales nih wkwk 😂" |
+| `"santai"` | "heyy sorry lg ga bisa bales, ntar gw chat ya" |
+| `"formal"` | "Mohon maaf, saat ini saya belum dapat membalas." |
+| `"campur"` | "Sorry ya belum bisa bales, ntar saya info lagi" |
+| Custom | Tulis apa aja: `"bahasa sunda"`, `"english casual"`, dll |
+
+```js
+replyStyle: "santai",    // ganti sesuai selera
 ```
-Urutan: Groq 1 > 2 > ... > N > Gemini 1 > 2 > ... > N > Template message
-```
+
+### Context-Aware
+
+AI otomatis tau situasi tanpa perlu diketik manual:
+- Waktu dan hari (pagi/siang/malam, weekday/weekend)
+- Event dan hari besar (Ramadan, 17 Agustus, Natal, dll)
+- Kemungkinan aktivitas (kerja, istirahat, ngoding, olahraga)
+- Jawaban bervariasi dan tidak monoton
 
 ---
 
 ## Konfigurasi
 
-Edit `config.js` — setiap setting udah ada comment penjelasannya di file:
+Semua setting ada di `config.js` — tiap baris udah ada comment penjelasannya:
 
-| Setting | Deskripsi |
-|---------|-----------|
-| `ai.model` | Model AI di Groq (default: `openai/gpt-oss-120b`) |
-| `ai.geminiModel` | Model Gemini fallback (default: `gemini-2.0-flash`) |
-| `ai.contextualMode` | AI reply seolah kamu yang bales |
-| `ai.maxTokens` | Panjang max jawaban AI |
-| `awayMode.messages` | Daftar pesan fallback |
-| `awayMode.schedule` | Jam tidur (away otomatis) |
-| `safety.replyDelay` | Delay sebelum reply (ms) |
-| `safety.maxRepliesPerContact` | Max reply per kontak |
-| `safety.cooldownPerContact` | Cooldown antar reply (detik) |
-| `cleanup.maxInbox` | Max pesan di inbox |
-| `cleanup.inboxMaxAge` | Hapus inbox lebih dari X jam |
-| `keepAlive.enabled` | Anti-sleep untuk cloud hosting |
-| `keepAlive.intervalMinutes` | Interval ping (menit) |
+| Setting | Deskripsi | Default |
+|---------|-----------|---------|
+| `ai.replyStyle` | Gaya bahasa AI | `"santai"` |
+| `ai.model` | Model AI di Groq | `"openai/gpt-oss-120b"` |
+| `ai.geminiModel` | Model Gemini (fallback) | `"gemini-2.5-flash"` |
+| `ai.contextualMode` | AI reply seolah kamu | `true` |
+| `ai.maxTokens` | Max panjang jawaban AI | `500` |
+| `awayMode.enabled` | Away mode saat start | `true` |
+| `awayMode.schedule` | Jam away otomatis | `22:00 - 07:00` |
+| `safety.replyDelay` | Delay sebelum reply | `2000ms` |
+| `safety.maxRepliesPerContact` | Max reply per kontak | `3` |
+| `safety.cooldownPerContact` | Cooldown per kontak | `300s` |
+| `cleanup.maxInbox` | Max pesan di inbox | `100` |
+| `cleanup.inboxMaxAge` | Hapus inbox > X jam | `24` |
+| `keepAlive.enabled` | Anti-sleep cloud | `true` |
+| `keepAlive.intervalMinutes` | Interval ping | `4` |
 
 ---
 
