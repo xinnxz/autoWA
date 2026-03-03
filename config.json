@@ -1,0 +1,61 @@
+{
+  "awayMode": {
+    "enabled": true,
+    "messages": [
+      "woy gw lagi tidur njir 😴 ntar gw bales kalo udah melek yak. sabar bre~\n\n_~autoreply by bot_",
+      "halo kak, lagi molor 💤 chat nya udah masuk kok, tar dibales. tenang aja~\n\n_~autoreply by bot_",
+      "ZONK! lagi gabisa dihubungi 🫠 mungkin lagi rebahan atau ketiduran. ntar ya!\n\n_~autoreply by bot_",
+      "maaf ya, lagi off 🔌 bukan sombong, emang lagi istirahat beneran wkwk\n\n_~autoreply by bot_",
+      "this number is currently unavailable ❌ becanda, cuma lagi tidur aja 😂 tar dibales!\n\n_~autoreply by bot_",
+      "gw lagi di alam mimpi ✨ kalo urgent, telpon aja. kalo ga urgent, sabar ya bestie 🙏\n\n_~autoreply by bot_",
+      "auto reply nih, lagi afk dari dunia nyata 🌙 ntar diread kok tenang~\n\n_~autoreply by bot_",
+      "eh sorry baru bisa bales nanti, lagi recharge energy dulu ⚡ tar gw kabarin ya!\n\n_~autoreply by bot_"
+    ],
+    "cooldown": 300,
+    "schedule": {
+      "enabled": true,
+      "sleepStart": "22:00",
+      "sleepEnd": "07:00",
+      "timezone": "Asia/Jakarta"
+    }
+  },
+  "features": {
+    "awayMode": true,
+    "aiReply": true,
+    "autoReply": true
+  },
+  "autoReplies": [
+    {
+      "keywords": [
+        "urgent",
+        "darurat",
+        "penting banget"
+      ],
+      "response": "⚠️ Pesan kamu terdeteksi sebagai *urgent*.\n\nAkan segera dihubungi. Mohon tunggu ya!"
+    },
+    {
+      "keywords": [
+        "terima kasih",
+        "makasih",
+        "thanks"
+      ],
+      "response": "Sama-sama! 😊"
+    }
+  ],
+  "ai": {
+    "enabled": true,
+    "prefix": "!ai",
+    "model": "llama-3.3-70b-versatile",
+    "systemPrompt": "Kamu adalah asisten pribadi. Jawab dalam Bahasa Indonesia yang santai tapi sopan. Jawab singkat dan jelas, maksimal 2 paragraf.",
+    "contextualMode": true,
+    "contextualPrompt": "Kamu lagi gabisa pegang HP (tidur/sibuk). Balas pesan seolah kamu yang lagi AFK. Pake bahasa gaul, santai, casual. Bahasa Indonesia sehari-hari. Jawab singkat 1-2 kalimat. JANGAN PERNAH bilang kamu AI atau bot. Boleh pake emoji dikit. Kalo ditanya yg ga tau, bilang 'ntar gw kabarin ya'. Di akhir SELALU tambah baris baru lalu tulis _~autoreply_",
+    "maxTokens": 500
+  },
+  "safety": {
+    "replyDelay": 2000,
+    "maxRepliesPerContact": 3,
+    "cooldownPerContact": 300,
+    "ignoreGroups": true,
+    "ignoreStatus": true
+  }
+}

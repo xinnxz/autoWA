@@ -1,0 +1,22 @@
+{
+    "harga": {
+        "question": "Berapa harga produk?",
+        "answer": "💰 *Daftar Harga*\n\n1. Produk A — Rp 50.000\n2. Produk B — Rp 75.000\n3. Produk C — Rp 100.000\n\nHarga belum termasuk ongkir.\nKetik *!order <nama_produk> <jumlah>* untuk pesan!"
+    },
+    "pengiriman": {
+        "question": "Bagaimana cara pengiriman?",
+        "answer": "🚚 *Info Pengiriman*\n\n• Ekspedisi: JNE, J&T, SiCepat\n• Estimasi: 2-5 hari kerja\n• Ongkir dihitung berdasarkan berat & tujuan\n• Free ongkir untuk pembelian di atas Rp 200.000!"
+    },
+    "pembayaran": {
+        "question": "Metode pembayaran apa saja?",
+        "answer": "💳 *Metode Pembayaran*\n\n• Transfer Bank (BCA, Mandiri, BRI)\n• E-Wallet (GoPay, OVO, Dana)\n• COD (khusus area tertentu)\n\nKonfirmasi pembayaran kirim bukti transfer ke chat ini."
+    },
+    "retur": {
+        "question": "Bagaimana kebijakan retur?",
+        "answer": "🔄 *Kebijakan Retur*\n\n• Retur dalam 7 hari setelah barang diterima\n• Barang harus dalam kondisi asli (belum dipakai)\n• Ongkir retur ditanggung pembeli\n• Hubungi admin untuk proses retur"
+    },
+    "garansi": {
+        "question": "Apakah ada garansi?",
+        "answer": "🛡️ *Garansi Produk*\n\n• Garansi 30 hari untuk kerusakan pabrik\n• Tidak berlaku untuk kerusakan akibat pemakaian\n• Simpan bukti pembelian untuk klaim garansi"
+    }
+}

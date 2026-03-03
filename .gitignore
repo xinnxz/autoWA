@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment variables (JANGAN di-commit! Ada API keys)
+.env
+
+# Baileys auth session (JANGAN di-commit! Ada credentials WA)
+auth_info/
+
+# Data yang di-generate runtime
+data/orders.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
