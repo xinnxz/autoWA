@@ -23,6 +23,16 @@ const Groq = require('groq-sdk');
 const config = require('../../config.js');
 const logger = require('../utils/logger');
 
+// Import runtime overrides (bisa diubah lewat WA command)
+// Lazy-load untuk hindari circular dependency
+let _runtimeOverrides = null;
+function getOverrides() {
+  if (!_runtimeOverrides) {
+    _runtimeOverrides = require('./botControl').runtimeOverrides;
+  }
+  return _runtimeOverrides || {};
+}
+
 // ─── Provider State ───
 // Masing-masing provider punya array key, clients, dan cooldown sendiri
 const providers = {
@@ -271,7 +281,7 @@ async function callGroq(keyIdx, prompt, mode) {
   let systemPrompt;
   if (mode === 'contextual') {
     const ctx = buildDynamicContext();
-    const style = config.ai.replyStyle || 'santai';
+    const style = getOverrides().replyStyle || config.ai.replyStyle || 'santai';
 
     // Semua teks prompt disesuaikan gaya bahasa
     const templates = {
@@ -365,7 +375,7 @@ WAJIB: akhiri setiap pesan dengan baris baru lalu tulis: ${t.closing}`;
   }
 
   const completion = await client.chat.completions.create({
-    model: config.ai.model || 'llama-3.3-70b-versatile',
+    model: getOverrides().model || config.ai.model || 'llama-3.3-70b-versatile',
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: prompt },
