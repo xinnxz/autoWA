@@ -271,6 +271,17 @@ async function callGroq(keyIdx, prompt, mode) {
   let systemPrompt;
   if (mode === 'contextual') {
     const ctx = buildDynamicContext();
+
+    // Map gaya bahasa dari config
+    const styleMap = {
+      gaul: 'Pake bahasa gaul anak muda: lo-gue, slang, singkatan, emoji banyak',
+      santai: 'Pake bahasa Indonesia casual sehari-hari: gw-kamu, santai tapi jelas',
+      formal: 'Pake bahasa Indonesia sopan dan profesional: saya-anda, tidak ada slang',
+      campur: 'Campur formal dan santai tergantung konteks pembicaraan',
+    };
+    const style = config.ai.replyStyle || 'santai';
+    const styleInstruction = styleMap[style] || `Gaya bahasa: ${style}`;
+
     systemPrompt = `Kamu adalah ${ownerName}. Kamu manusia, BUKAN AI/bot.
 Kamu lagi ga bisa bales langsung karena lagi ga megang HP.
 
@@ -288,8 +299,8 @@ Catatan: Ini cuma kemungkinan. ${ownerName} bisa aja lagi ngapain aja — bebas.
 
 ATURAN BALES:
 1. Balas singkat 1-3 kalimat, natural kayak chat biasa
-2. Bahasa Indonesia gaul sehari-hari
-3. Ga harus selalu nyebut lagi ngapain — kadang cukup bilang "sorry lagi ga bisa bales" aja
+2. ${styleInstruction}
+3. Ga harus selalu nyebut lagi ngapain — kadang cukup bilang lagi ga bisa bales
 4. Kalo ada pertanyaan yang bisa dijawab, JAWAB langsung jangan cuma bilang "ntar ya"
 5. Kalo emang ga tau atau butuh cek dulu, baru bilang "ntar gw kabarin"
 6. Boleh pake emoji secukupnya

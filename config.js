@@ -56,6 +56,16 @@ module.exports = {
   // Konfigurasi AI reply (Groq + Gemini)
   ai: {
     enabled: true,
+
+    // Gaya bahasa AI saat reply
+    // Pilihan:
+    //   "gaul"    → lo-gue, slang, emoji banyak. Cocok buat anak muda
+    //   "santai"  → gw-kamu, casual tapi ga terlalu slang
+    //   "formal"  → saya-kamu/anda, sopan dan profesional
+    //   "campur"  → campur gaul + formal, tergantung konteks
+    //   atau tulis custom sendiri, misal: "bahasa sunda kasar" / "english casual"
+    replyStyle: "santai",
+
     prefix: "!ai",              // Command untuk tanya AI langsung (misal: !ai apa itu javascript)
 
     // Model AI yang dipakai di Groq (primary)
