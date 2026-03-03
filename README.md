@@ -7,7 +7,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Baileys](https://img.shields.io/badge/Baileys-WebSocket-25D366?style=flat-square&logo=whatsapp&logoColor=white)](https://github.com/WhiskeySockets/Baileys)
 [![Groq](https://img.shields.io/badge/Groq-AI_Engine-F55036?style=flat-square&logo=groq&logoColor=white)](https://groq.com)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)](LICENSE)
 [![Deploy](https://img.shields.io/badge/Deploy-Koyeb-4c4c4c?style=flat-square&logo=koyeb&logoColor=white)](https://www.koyeb.com)
 
 Bot yang auto-reply chat WhatsApp kamu pas lagi tidur, meeting, atau sibuk.<br>
@@ -241,7 +241,9 @@ autoWA/
 
 ## License
 
-MIT
+[GPL-3.0](LICENSE) — boleh dipake dan dimodif, tapi wajib credit author asli dan tetep open source.
+
+Copyright (c) 2026 Luthfi ([xinnxz](https://github.com/xinnxz))
 
 ---
 
