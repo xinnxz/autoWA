@@ -29,6 +29,11 @@ const botState = {
   awayReason: '',                       // Alasan away (misal: 'tidur', 'meeting', 'kuliah')
 };
 
+// ─── Group settings (per-group on/off + custom style) ───
+// Key: groupId (120363xxx@g.us)
+// Value: { enabled: true/false, style: 'formal' | null }
+const groupSettings = {};
+
 // ─── Runtime overrides (bisa diubah lewat WA tanpa restart) ───
 const runtimeOverrides = {
   replyStyle: null,  // null = pakai dari config.js
@@ -135,6 +140,7 @@ ${L.helpControl}
 ${L.helpConfig}
 │ !style <${locale.meta.code === 'id' ? 'gaya' : 'style'}> — ${locale.meta.code === 'id' ? 'Ganti gaya bahasa' : 'Change reply style'}
 │ !model <model> — ${locale.meta.code === 'id' ? 'Ganti model AI' : 'Change AI model'}
+│ !group — ${locale.meta.code === 'id' ? 'Kontrol bot di group' : 'Control bot in groups'}
 
 ${L.helpStyle}
 │ ${styleNames}
@@ -408,6 +414,103 @@ ${L.helpFooter(currentStyle, currentModel)}`;
     process.exit(0);
   }
 
+  // ─── !group → Kontrol bot di group ───
+  if (text.startsWith('!group')) {
+    const args = text.replace('!group', '').trim();
+    const L = getLocale().cmd;
+    const groupId = msg.isGroup ? msg.from : null;
+
+    // !group list — lihat semua group aktif (bisa dari private)
+    if (args === 'list') {
+      const activeGroups = Object.entries(groupSettings).filter(([, v]) => v.enabled);
+      if (activeGroups.length === 0) {
+        await sock.sendMessage(msg.from, { text: '📋 Tidak ada group yang aktif.' });
+        return true;
+      }
+      let list = '📋 *Group Aktif*\n\n';
+      for (const [gid, settings] of activeGroups) {
+        const shortId = gid.split('@')[0].slice(-6);
+        const styleTag = settings.style ? ` (style: ${settings.style})` : '';
+        list += `│ ...${shortId}${styleTag}\n`;
+      }
+      list += `\n_Total: ${activeGroups.length} group_`;
+      await sock.sendMessage(msg.from, { text: list });
+      return true;
+    }
+
+    // !group reset — matikan semua group (bisa dari private)
+    if (args === 'reset') {
+      const count = Object.keys(groupSettings).length;
+      for (const key of Object.keys(groupSettings)) delete groupSettings[key];
+      await sock.sendMessage(msg.from, { text: `✅ ${count} group direset. Bot tidak aktif di group manapun.` });
+      logger.info(`Group reset: ${count} groups cleared`);
+      return true;
+    }
+
+    // Sisa command harus di group
+    if (!groupId) {
+      await sock.sendMessage(msg.from, { text: '❌ Command ini harus diketik di dalam group.\n\nDari private bisa: *!group list*, *!group reset*' });
+      return true;
+    }
+
+    // !group on
+    if (args === 'on') {
+      groupSettings[groupId] = { enabled: true, style: groupSettings[groupId]?.style || null };
+      await sock.sendMessage(msg.from, { text: '✅ Bot aktif di group ini!\n\nBot akan reply pesan saat away mode.' });
+      logger.info(`Group ON: ${groupId}`);
+      return true;
+    }
+
+    // !group off
+    if (args === 'off') {
+      if (groupSettings[groupId]) groupSettings[groupId].enabled = false;
+      else groupSettings[groupId] = { enabled: false, style: null };
+      await sock.sendMessage(msg.from, { text: '🔇 Bot dimatikan di group ini.' });
+      logger.info(`Group OFF: ${groupId}`);
+      return true;
+    }
+
+    // !group style <style>
+    if (args.startsWith('style')) {
+      const styleName = args.replace('style', '').trim();
+      if (!styleName) {
+        const currentStyle = groupSettings[groupId]?.style || 'default (mengikuti config)';
+        const presets = getStylePresets();
+        await sock.sendMessage(msg.from, {
+          text: `🎨 *Group Style*\n\nAktif: *${currentStyle}*\n\nPilihan:\n${presets.map(s => `│ !group style ${s}`).join('\n')}\n│ !group style reset`
+        });
+        return true;
+      }
+      if (styleName === 'reset') {
+        if (groupSettings[groupId]) groupSettings[groupId].style = null;
+        await sock.sendMessage(msg.from, { text: '✅ Group style direset ke default.' });
+        return true;
+      }
+      if (!groupSettings[groupId]) groupSettings[groupId] = { enabled: true, style: null };
+      groupSettings[groupId].style = styleName;
+      await sock.sendMessage(msg.from, { text: `✅ Group style diubah ke: *${styleName}*` });
+      logger.info(`Group style ${groupId}: ${styleName}`);
+      return true;
+    }
+
+    // !group (tanpa args) — status group ini
+    if (!args) {
+      if (!groupId) {
+        await sock.sendMessage(msg.from, { text: '❌ Ketik di dalam group, atau gunakan *!group list*' });
+        return true;
+      }
+      const gs = groupSettings[groupId];
+      const status = gs?.enabled ? '🟢 Aktif' : '🔴 Nonaktif';
+      const style = gs?.style || 'default';
+      await sock.sendMessage(msg.from, {
+        text: `📋 *Group Status*\n\n│ Status: ${status}\n│ Style: ${style}\n\n*Commands:*\n│ !group on — aktifkan\n│ !group off — matikan\n│ !group style <style> — set style\n│ !group list — list semua group\n│ !group reset — matikan semua`
+      });
+      return true;
+    }
+
+    return true;
+  }
+
   return false; // Bukan command
 }
 
@@ -436,4 +539,18 @@ function formatUptime(seconds) {
   return `${h}h ${m}m ${s}s`;
 }
 
-module.exports = { handleCommand, isAway, addToInbox, botState, runtimeOverrides };
+/**
+ * Cek apakah group tertentu enabled
+ */
+function isGroupEnabled(groupId) {
+  return groupSettings[groupId]?.enabled === true;
+}
+
+/**
+ * Get group-specific style (null = pakai default)
+ */
+function getGroupStyle(groupId) {
+  return groupSettings[groupId]?.style || null;
+}
+
+module.exports = { handleCommand, isAway, addToInbox, botState, runtimeOverrides, groupSettings, isGroupEnabled, getGroupStyle };

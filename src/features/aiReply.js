@@ -409,18 +409,36 @@ async function handle(sock, msg) {
 
 /**
  * Handle contextual reply
+ * @param {object} opts - Optional: { groupStyle: string, mention: string }
  */
-async function handleContextual(sock, msg) {
+async function handleContextual(sock, msg, opts = {}) {
   try {
+    // Temporarily override style for this call if group has custom style
+    let prevStyle = null;
+    if (opts.groupStyle) {
+      prevStyle = getOverrides().replyStyle;
+      getOverrides().replyStyle = opts.groupStyle;
+    }
+
     const prompt = `${msg.name} mengirim pesan: "${msg.text}"\n\nBalas pesan ini.`;
     const aiText = await generateWithRotation(prompt, 'contextual');
-    await sock.sendMessage(msg.from, { text: aiText });
+
+    // Restore style after generating
+    if (opts.groupStyle && prevStyle !== undefined) {
+      getOverrides().replyStyle = prevStyle;
+    }
+
+    const sendOpts = { text: aiText };
+    if (opts.mention) sendOpts.mentions = [opts.mention];
+    await sock.sendMessage(msg.from, sendOpts);
     logger.outgoing(msg.from.split('@')[0], `[AI-Context] ${aiText.substring(0, 50)}...`);
   } catch (err) {
     logger.error('Contextual AI error', err);
     const messages = config.awayMode.messages;
     const fallback = messages[Math.floor(Math.random() * messages.length)];
-    await sock.sendMessage(msg.from, { text: fallback });
+    const sendOpts = { text: fallback };
+    if (opts.mention) sendOpts.mentions = [opts.mention];
+    await sock.sendMessage(msg.from, sendOpts);
   }
 }
 

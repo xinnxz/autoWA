@@ -22,7 +22,7 @@
 
 const config = require('../config.js');
 const logger = require('./utils/logger');
-const { handleCommand, isAway, addToInbox } = require('./features/botControl');
+const { handleCommand, isAway, addToInbox, isGroupEnabled, getGroupStyle } = require('./features/botControl');
 const aiReply = require('./features/aiReply');
 
 // ─── Cooldown tracker ───
@@ -108,27 +108,63 @@ async function handleMessage(sock, msg) {
   // ─── IGNORE: Status broadcast ───
   if (msg.from === 'status@broadcast') return;
 
-  // ─── IGNORE: Group chat (jika setting aktif) ───
-  if (msg.isGroup && safety.ignoreGroups) return;
+  // ─── GROUP HANDLING ───
+  // Group messages: check if group is enabled, otherwise ignore
+  if (msg.isGroup) {
+    // Owner commands di group tetap diproses
+    const ownerNumber = process.env.OWNER_NUMBER || '';
+    const senderNumber = (msg.participant || msg.from).split('@')[0].split(':')[0];
+    const isOwner = senderNumber === ownerNumber || msg.raw?.key?.fromMe;
+    
+    if (isOwner && msg.text.startsWith('!')) {
+      const handled = await handleCommand(sock, msg);
+      if (handled) return;
+    }
 
-  // ─── OWNER COMMANDS ───
-  // Owner number dari .env (bukan config.json agar aman di GitHub)
+    // Cek apakah group ini di-enable
+    if (!isGroupEnabled(msg.from)) return;
+
+    // Jangan reply ke pesan sendiri di group
+    if (msg.raw?.key?.fromMe) return;
+
+    // Cek away
+    const botIsAway = isAway() || isScheduledAway();
+    if (!botIsAway) return;
+
+    // Log & cooldown (pakai group ID)
+    addToInbox(msg.from, msg.name || 'Unknown', msg.text);
+    if (!canReply(msg.from)) return;
+
+    await sleep(safety.replyDelay);
+
+    // AI reply di group (pakai group-specific style jika ada)
+    if (config.features.aiReply && config.ai.contextualMode) {
+      const groupStyle = getGroupStyle(msg.from);
+      await aiReply.handleContextual(sock, msg, { groupStyle, mention: msg.participant });
+      return;
+    }
+
+    // Fallback: random message + mention
+    const messages = config.awayMode.messages;
+    const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+    await sendReply(sock, msg, randomMsg, msg.participant);
+    return;
+  }
+
+  // ─── PRIVATE CHAT HANDLING ───
   const ownerNumber = process.env.OWNER_NUMBER || '';
   const senderNumber = msg.from.split('@')[0].split(':')[0];
   const isOwner = senderNumber === ownerNumber || msg.raw?.key?.fromMe;
   if (isOwner) {
-    // Hanya proses jika diawali tanda seru (command)
     if (msg.text.startsWith('!')) {
       const handled = await handleCommand(sock, msg);
       if (handled) return;
-      
-      // Jika !ai → tetap proses AI reply
       if (msg.text.startsWith(config.ai.prefix)) {
         await aiReply.handle(sock, msg);
         return;
       }
     }
-    return; // Pesan biasa dari owner → abaikan (jangan auto-reply ke diri sendiri)
+    return;
   }
 
   logger.incoming(msg.from.split('@')[0], msg.text);
@@ -180,11 +216,16 @@ async function handleMessage(sock, msg) {
 }
 
 /**
- * Kirim reply
+ * Kirim reply (support mention di group)
  */
-async function sendReply(sock, msg, text) {
+async function sendReply(sock, msg, text, mentionJid) {
   try {
-    await sock.sendMessage(msg.from, { text });
+    const opts = { text };
+    if (mentionJid) {
+      // Di group: mention sender biar jelas bales siapa
+      opts.mentions = [mentionJid];
+    }
+    await sock.sendMessage(msg.from, opts);
     logger.outgoing(msg.from.split('@')[0], text);
   } catch (err) {
     logger.error(`Gagal reply ke ${msg.from}`, err);
