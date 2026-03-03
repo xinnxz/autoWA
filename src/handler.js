@@ -55,9 +55,11 @@ function isScheduledAway() {
   const schedule = config.awayMode.schedule;
   if (!schedule.enabled) return false;
 
+  const tz = config.timezone || schedule.timezone || 'Asia/Jakarta';
   const now = new Date();
-  const jakartaTime = new Date(now.toLocaleString('en-US', { timeZone: schedule.timezone }));
-  const currentTime = jakartaTime.getHours() * 60 + jakartaTime.getMinutes();
+  const localTime = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+
+  const currentTime = localTime.getHours() * 60 + localTime.getMinutes();
 
   const [startH, startM] = schedule.sleepStart.split(':').map(Number);
   const [endH, endM] = schedule.sleepEnd.split(':').map(Number);

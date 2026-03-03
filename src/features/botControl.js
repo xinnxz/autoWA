@@ -19,6 +19,7 @@
 
 const config = require('../../config.js');
 const logger = require('../utils/logger');
+const { getLocale, getStylePresets } = require('../utils/locale');
 
 // ─── State bot (disimpan di memory) ───
 const botState = {
@@ -113,40 +114,43 @@ async function handleCommand(sock, msg) {
 
   // ─── !help → Tampilkan semua command + config ───
   if (text === '!help') {
+    const locale = getLocale();
+    const L = locale.cmd;
     const currentStyle = runtimeOverrides.replyStyle || config.ai.replyStyle || 'santai';
     const currentModel = runtimeOverrides.model || config.ai.model || 'default';
+    const styleNames = getStylePresets().join(' / ');
 
-    const helpText = `*📖 Bot Commands*
+    const helpText = `${L.helpHeader}
 
-*Control:*
-│ !off — Aktifkan away mode
-│ !on — Matikan away mode
-│ !dnd <waktu> — Away sementara (!dnd 2h, !dnd 30m)
-│ !status — Cek status bot
-│ !inbox — Lihat chat masuk saat away
-│ !inbox clear — Hapus inbox
-│ !ai <tanya> — Tanya AI langsung
-│ !logout — Logout WhatsApp
+${L.helpControl}
+│ !off — ${locale.meta.code === 'id' ? 'Aktifkan away mode' : 'Turn on away mode'}
+│ !on — ${locale.meta.code === 'id' ? 'Matikan away mode' : 'Turn off away mode'}
+│ !dnd <waktu> — ${locale.meta.code === 'id' ? 'Away sementara (!dnd 2h, !dnd 30m)' : 'Temporary away (!dnd 2h, !dnd 30m)'}
+│ !status — ${locale.meta.code === 'id' ? 'Cek status bot' : 'Check bot status'}
+│ !inbox — ${locale.meta.code === 'id' ? 'Lihat chat masuk saat away' : 'View messages while away'}
+│ !inbox clear — ${locale.meta.code === 'id' ? 'Hapus inbox' : 'Clear inbox'}
+│ !ai <${locale.meta.code === 'id' ? 'tanya' : 'question'}> — ${locale.meta.code === 'id' ? 'Tanya AI langsung' : 'Ask AI directly'}
+│ !logout — ${locale.meta.code === 'id' ? 'Logout WhatsApp' : 'Logout WhatsApp'}
 
-*Konfigurasi AI:*
-│ !style <gaya> — Ganti gaya bahasa
-│ !model <model> — Ganti model AI
+${L.helpConfig}
+│ !style <${locale.meta.code === 'id' ? 'gaya' : 'style'}> — ${locale.meta.code === 'id' ? 'Ganti gaya bahasa' : 'Change reply style'}
+│ !model <model> — ${locale.meta.code === 'id' ? 'Ganti model AI' : 'Change AI model'}
 
-*Style:*
-│ gaul / santai / formal / campur
-│ custom <teks> — bebas tulis
+${L.helpStyle}
+│ ${styleNames}
+│ ${L.styleCustomHint}
 
-*Model:*
-│ gpt — GPT-OSS 120B (terpintar)
+${L.helpModel}
+│ gpt — GPT-OSS 120B
 │ gpt20 — GPT-OSS 20B
 │ llama — Llama 3.3 70B
-│ llama8 — Llama 3.1 8B (tercepat)
+│ llama8 — Llama 3.1 8B
 │ qwen — Qwen3 32B
 │ kimi — Kimi K2
 │ maverick — Llama 4 Maverick
 │ scout — Llama 4 Scout
 
-_style=${currentStyle} | model=${currentModel}_`;
+${L.helpFooter(currentStyle, currentModel)}`;
     await sock.sendMessage(msg.from, { text: helpText });
     return true;
   }
@@ -154,11 +158,12 @@ _style=${currentStyle} | model=${currentModel}_`;
   // ─── !off → Aktifkan away mode ───
   if (text === '!off') {
     botState.awayMode = true;
+    const L = getLocale().cmd;
     const style = runtimeOverrides.replyStyle || config.ai.replyStyle || 'santai';
     await sock.sendMessage(msg.from, { 
-      text: `🔴 *Away mode AKTIF!*\n\nStyle: ${style}\nModel: ${runtimeOverrides.model || config.ai.model || 'default'}` 
+      text: `${L.awayOn}\n\n${L.awayOnDetail(style, runtimeOverrides.model || config.ai.model || 'default')}` 
     });
-    logger.info('Away mode diaktifkan oleh owner');
+    logger.info('Away mode ON');
     return true;
   }
 
@@ -170,10 +175,11 @@ _style=${currentStyle} | model=${currentModel}_`;
       clearTimeout(botState.dndTimer);
       botState.dndTimer = null;
     }
+    const L = getLocale().cmd;
     await sock.sendMessage(msg.from, { 
-      text: '🟢 *Away mode MATI!*\n\nBot tidak akan reply siapapun. Kamu online sekarang.' 
+      text: `${L.awayOff}\n\n${L.awayOffDetail}` 
     });
-    logger.info('Away mode dimatikan oleh owner');
+    logger.info('Away mode OFF');
     return true;
   }
 
@@ -252,79 +258,62 @@ _style=${currentStyle} | model=${currentModel}_`;
   // ─── !style → Ganti gaya bahasa AI ───
   if (text.startsWith('!style')) {
     const args = text.replace('!style', '').trim();
-    const presets = ['gaul', 'santai', 'formal', 'campur'];
+    const L = getLocale().cmd;
+    const presets = getStylePresets();
     
     if (!args) {
       const currentStyle = runtimeOverrides.replyStyle || config.ai.replyStyle || 'santai';
+      const styleList = presets.map(s => `│ !style ${s}`).join('\n');
       await sock.sendMessage(msg.from, { 
-        text: `🎨 *Reply Style*\n\n` +
-          `Aktif: *${currentStyle}*\n\n` +
-          `*Pilihan:*\n` +
-          `│ !style gaul\n` +
-          `│ !style santai\n` +
-          `│ !style formal\n` +
-          `│ !style campur\n` +
-          `│ !style custom <teks bebas>\n` +
-          `│ !style reset\n\n` +
-          `Contoh custom:\n` +
-          `│ !style custom bahasa sunda\n` +
-          `│ !style custom english casual`
+        text: `${L.styleHeader}\n\n` +
+          `${L.styleActive(currentStyle)}\n\n` +
+          `${styleList}\n│ !style custom <...>\n│ !style reset`
       });
       return true;
     }
 
     if (args === 'reset') {
       runtimeOverrides.replyStyle = null;
-      await sock.sendMessage(msg.from, { 
-        text: `✅ Style dikembalikan ke config: *${config.ai.replyStyle || 'santai'}*` 
-      });
-      logger.info('Reply style reset ke config');
+      await sock.sendMessage(msg.from, { text: L.styleReset(config.ai.replyStyle || 'santai') });
+      logger.info('Reply style reset');
       return true;
     }
 
-    // Custom style: !style custom <teks>
     if (args.startsWith('custom ')) {
       const customText = args.replace('custom ', '').trim();
       if (!customText) {
-        await sock.sendMessage(msg.from, { text: '❌ Tulis gaya bahasa setelah custom.\n\nContoh: *!style custom bahasa sunda*' });
+        await sock.sendMessage(msg.from, { text: L.styleCustomError });
         return true;
       }
       runtimeOverrides.replyStyle = customText;
-      await sock.sendMessage(msg.from, { 
-        text: `✅ Style diubah ke custom: *${customText}*\n\n_Berlaku langsung. Ketik !style reset untuk kembalikan._` 
-      });
-      logger.info(`Reply style custom: ${customText}`);
+      await sock.sendMessage(msg.from, { text: `${L.styleCustomChanged(customText)}\n\n${L.styleLive}` });
+      logger.info(`Style custom: ${customText}`);
       return true;
     }
 
-    // Preset: harus exact match
     if (!presets.includes(args)) {
       await sock.sendMessage(msg.from, { 
-        text: `❌ Style *${args}* tidak dikenali.\n\n` +
-          `Pilihan: *gaul*, *santai*, *formal*, *campur*\n` +
-          `Atau: *!style custom <teks bebas>*`
+        text: `${L.styleInvalid(args)}\n\n${L.styleValidation(args)}`
       });
       return true;
     }
 
     runtimeOverrides.replyStyle = args;
-    await sock.sendMessage(msg.from, { 
-      text: `✅ Style diubah ke: *${args}*\n\n_Berlaku langsung. Ketik !style reset untuk kembalikan._` 
-    });
-    logger.info(`Reply style: ${args}`);
+    await sock.sendMessage(msg.from, { text: `${L.styleChanged(args)}\n\n${L.styleLive}` });
+    logger.info(`Style: ${args}`);
     return true;
   }
 
   // ─── !model → Ganti model AI ───
   if (text.startsWith('!model')) {
     const input = text.replace('!model', '').trim();
+    const L = getLocale().cmd;
     
     if (!input) {
       const currentModel = runtimeOverrides.model || config.ai.model || 'default';
       await sock.sendMessage(msg.from, { 
-        text: `🤖 *AI Model*\n\n` +
-          `Aktif: *${currentModel}*\n\n` +
-          `*Shortcut:*\n` +
+        text: `${L.modelHeader}\n\n` +
+          `${L.modelActive(currentModel)}\n\n` +
           `│ !model gpt — GPT-OSS 120B\n` +
           `│ !model gpt20 — GPT-OSS 20B\n` +
           `│ !model llama — Llama 3.3 70B\n` +
@@ -340,20 +329,15 @@ _style=${currentStyle} | model=${currentModel}_`;
 
     if (input === 'reset') {
       runtimeOverrides.model = null;
-      await sock.sendMessage(msg.from, { 
-        text: `✅ Model dikembalikan ke config: *${config.ai.model || 'default'}*` 
-      });
-      logger.info('AI model reset ke config');
+      await sock.sendMessage(msg.from, { text: L.modelReset(config.ai.model || 'default') });
+      logger.info('AI model reset');
       return true;
     }
 
-    // Resolve alias atau pakai langsung
     const resolvedModel = MODEL_ALIASES[input] || input;
     runtimeOverrides.model = resolvedModel;
-    const alias = MODEL_ALIASES[input] ? ` (${input})` : '';
-    await sock.sendMessage(msg.from, { 
-      text: `✅ Model diubah ke: *${resolvedModel}*${alias}\n\n_Berlaku langsung. Ketik !model reset untuk kembalikan._` 
-    });
+    const alias = MODEL_ALIASES[input] ? input : null;
+    await sock.sendMessage(msg.from, { text: `${L.modelChanged(resolvedModel, alias)}\n\n${L.modelLive}` });
     logger.info(`AI model: ${resolvedModel}`);
     return true;
   }

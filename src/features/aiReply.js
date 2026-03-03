@@ -33,6 +33,8 @@ function getOverrides() {
   return _runtimeOverrides || {};
 }
 
+const { getLocale, getStyle } = require('../utils/locale');
+
 // ─── Provider State ───
 // Masing-masing provider punya array key, clients, dan cooldown sendiri
 const providers = {
@@ -142,62 +144,51 @@ function markLimited(provider, index) {
  * AI jadi tau situasi owner tanpa perlu diketik manual
  */
 function buildDynamicContext() {
+  const locale = getLocale();
+  const ctx = locale.context;
+  const tz = config.timezone || 'Asia/Jakarta';
   const now = new Date();
-  const jakarta = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-  const jam = jakarta.getHours();
-  const menit = jakarta.getMinutes();
-  const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][jakarta.getDay()];
-  const bulanIdx = jakarta.getMonth(); // 0-11
-  const bulanNama = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][bulanIdx];
-  const tanggal = jakarta.getDate();
-  const tahun = jakarta.getFullYear();
-  const waktuStr = `${String(jam).padStart(2,'0')}:${String(menit).padStart(2,'0')} WIB`;
-  const tanggalStr = `${tanggal} ${bulanNama} ${tahun}`;
+  const local = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+  const jam = local.getHours();
+  const menit = local.getMinutes();
+  const hari = ctx.days[local.getDay()];
+  const bulanIdx = local.getMonth();
+  const bulanNama = ctx.months[bulanIdx];
+  const tanggal = local.getDate();
+  const tahun = local.getFullYear();
+  const waktuStr = `${String(jam).padStart(2,'0')}:${String(menit).padStart(2,'0')}`;
 
   // ─── Deteksi waktu & aktivitas ───
-  let waktu = '';
-  let aktivitas = [];
+  let waktuKey = '';
   if (jam >= 0 && jam < 3) {
-    waktu = 'tengah malam';
-    aktivitas = ['kemungkinan sudah tidur pulas', 'mungkin begadang ngoding project', 'deep sleep'];
+    waktuKey = 'tengahMalam';
   } else if (jam >= 3 && jam < 5) {
-    waktu = 'subuh/dini hari';
-    aktivitas = ['kemungkinan masih tidur', 'mungkin baru bangun sahur (kalau bulan puasa)'];
+    waktuKey = 'subuh';
   } else if (jam >= 5 && jam < 7) {
-    waktu = 'pagi buta';
-    aktivitas = ['baru bangun tidur', 'mandi dan siap-siap', 'sarapan'];
+    waktuKey = 'pagi';
   } else if (jam >= 7 && jam < 12) {
-    waktu = 'pagi';
-    aktivitas = ['lagi kerja atau kuliah', 'meeting', 'ngoding project', 'fokus depan laptop'];
+    waktuKey = 'menjelangSiang';
   } else if (jam >= 12 && jam < 14) {
-    waktu = 'siang';
-    aktivitas = ['istirahat makan siang', 'sholat dzuhur', 'rehat sebentar dari kerja'];
+    waktuKey = 'siang';
   } else if (jam >= 14 && jam < 17) {
-    waktu = 'sore';
-    aktivitas = ['masih kerja/kuliah', 'ngoding lagi', 'lagi di perjalanan', 'olahraga sore'];
+    waktuKey = 'sore';
   } else if (jam >= 17 && jam < 19) {
-    waktu = 'menjelang maghrib';
-    aktivitas = ['perjalanan pulang', 'istirahat', 'sholat maghrib', 'olahraga'];
+    waktuKey = 'petang';
   } else if (jam >= 19 && jam < 22) {
-    waktu = 'malam';
-    aktivitas = ['santai', 'nonton', 'main game', 'ngoding side project', 'scrolling sosmed', 'quality time'];
+    waktuKey = 'malam';
   } else {
-    waktu = 'larut malam';
-    aktivitas = ['kemungkinan sudah tidur', 'mungkin begadang ngoding', 'rebahan sambil scroll HP'];
+    waktuKey = 'malamLarut';
   }
-  // Pilih 1-2 aktivitas random biar ga monoton
-  const aktivitasStr = aktivitas.sort(() => Math.random() - 0.5).slice(0, 2).join(' atau ');
+
+  const timeInfo = ctx.time[waktuKey] || { label: waktuKey, activity: '' };
+  const waktu = timeInfo.label;
+  const aktivitasStr = timeInfo.activity;
 
   // ─── Deteksi hari ───
-  let konteksHari = '';
-  const isWeekend = hari === 'Sabtu' || hari === 'Minggu';
-  if (hari === 'Jumat' && jam >= 11 && jam <= 13) {
-    konteksHari = 'Hari Jumat, jam sholat Jumat — kemungkinan lagi di masjid.';
-  } else if (isWeekend) {
-    konteksHari = `${hari} (weekend) — kemungkinan libur, santai, hangout, atau ngoding project pribadi.`;
-  } else {
-    konteksHari = `${hari} (weekday) — hari kerja/kuliah biasa.`;
-  }
+  const isWeekend = local.getDay() === 0 || local.getDay() === 6;
+  const dayType = isWeekend ? ctx.weekend : ctx.weekday;
+  const tanggalStr = ctx.dateFormat(hari, tanggal, bulanNama, tahun, dayType);
+  const konteksHari = `${hari} (${dayType})`;
 
   // ─── Deteksi event/hari besar ───
   // Ramadan bergeser ~11 hari per tahun (2024: 12 Mar-10 Apr, 2025: 1 Mar-30 Mar, 2026: 18 Feb-19 Mar, 2027: 8 Feb-9 Mar)
@@ -268,6 +259,7 @@ function buildDynamicContext() {
     aktivitasStr,
     konteksHari,
     konteksEvent,
+    possibleActivity: ctx.possibleActivity,
   };
 }
 
@@ -277,99 +269,35 @@ function buildDynamicContext() {
 async function callGroq(keyIdx, prompt, mode) {
   const client = providers.groq.clients[keyIdx];
   const ownerName = process.env.OWNER_NAME || 'Bot';
+  const locale = getLocale();
+  const P = locale.prompt;
 
   let systemPrompt;
   if (mode === 'contextual') {
     const ctx = buildDynamicContext();
     const style = getOverrides().replyStyle || config.ai.replyStyle || 'santai';
 
-    // Semua teks prompt disesuaikan gaya bahasa
-    const templates = {
-      gaul: {
-        intro: `Lo adalah ${ownerName}. Lo manusia, BUKAN AI/bot. Lo lagi gabisa bales langsung karena ga megang HP.`,
-        personality: 'Orangnya gaul, rame, suka bercanda, asik',
-        rules: `1. Bales singkat 1-3 kalimat, natural kayak chat sama temen
-2. Pake bahasa gaul: lo-gue, slang, singkatan (yg, gw, bgt, wkwk, anjir, dll)
-3. Emoji boleh banyak
-4. Ga harus selalu bilang lagi ngapain
-5. Kalo bisa jawab pertanyaannya, JAWAB langsung
-6. Kalo ga tau, bilang "nt gue kabarin ye"
-7. JANGAN PERNAH bilang lo AI, bot, atau autoreply
-8. Variasikan jawaban — jangan monoton`,
-        closing: `_~autoreply by ${ownerName.toLowerCase()}_`,
-      },
-      santai: {
-        intro: `Kamu adalah ${ownerName}. Kamu manusia, BUKAN AI/bot. Kamu lagi ga bisa bales langsung karena ga megang HP.`,
-        personality: 'Orangnya santai, friendly, easy going',
-        rules: `1. Balas singkat 1-3 kalimat, natural kayak chat biasa
-2. Bahasa Indonesia casual: gw-kamu, santai tapi jelas
-3. Emoji secukupnya
-4. Ga harus selalu nyebut lagi ngapain
-5. Kalo bisa jawab, JAWAB langsung
-6. Kalo ga tau, bilang "ntar gw kabarin ya"
-7. JANGAN PERNAH bilang kamu AI, bot, atau autoreply
-8. Variasikan jawaban — jangan monoton`,
-        closing: `_~autoreply by ${ownerName.toLowerCase()}_`,
-      },
-      formal: {
-        intro: `Anda adalah ${ownerName}. Anda seorang manusia, BUKAN AI atau bot. Saat ini Anda tidak dapat membalas pesan secara langsung.`,
-        personality: 'Profesional, sopan, ramah, dan bertanggung jawab',
-        rules: `1. Balas dengan singkat dan jelas, 1-3 kalimat
-2. Gunakan bahasa Indonesia baku dan sopan: saya-Anda, tidak ada slang atau singkatan
-3. Tidak menggunakan kata: gw, lo, gue, lu, wkwk, anjir, bgt, yg, dll
-4. Emoji minimal atau tidak sama sekali
-5. Tidak harus selalu menyebutkan sedang melakukan apa
-6. Jika pertanyaan bisa dijawab, jawab langsung dengan sopan
-7. Jika tidak tahu, katakan "Nanti saya informasikan kembali"
-8. JANGAN PERNAH menyebut diri sebagai AI, bot, atau autoreply
-9. Variasikan jawaban agar tidak terkesan template`,
-        closing: `_~autoreply by ${ownerName.toLowerCase()}_`,
-      },
-      campur: {
-        intro: `Kamu adalah ${ownerName}. Kamu manusia, BUKAN AI/bot. Lagi tidak bisa balas langsung karena tidak memegang HP.`,
-        personality: 'Friendly, bisa formal bisa santai tergantung lawan bicara',
-        rules: `1. Balas singkat 1-3 kalimat
-2. Campur bahasa formal dan santai, sesuaikan dengan nada chat lawan bicara
-3. Kalau lawan bicaranya formal, balas formal. Kalau santai, balas santai
-4. Emoji secukupnya
-5. Jika bisa menjawab pertanyaan, jawab langsung
-6. Jika tidak tahu, bilang "Nanti saya kabari ya"
-7. JANGAN PERNAH bilang kamu AI, bot, atau autoreply
-8. Variasikan jawaban`,
-        closing: `_~autoreply by ${ownerName.toLowerCase()}_`,
-      },
-    };
+    // Ambil style dari locale (preset atau custom)
+    const styleObj = getStyle(style);
+    const intro = styleObj ? styleObj.intro(ownerName) : locale.customIntro(ownerName);
+    const personality = styleObj ? styleObj.personality : locale.customPersonality;
+    const rules = styleObj ? styleObj.rules(ownerName) : locale.customRules(style);
+    const closing = P.closing(ownerName);
 
-    // Ambil template sesuai style, atau buat custom
-    const t = templates[style] || {
-      intro: `Kamu adalah ${ownerName}. Kamu manusia, BUKAN AI/bot. Kamu sedang tidak bisa membalas langsung.`,
-      personality: 'Friendly dan ramah',
-      rules: `1. Balas singkat 1-3 kalimat
-2. Gaya bahasa: ${style}
-3. Jika bisa jawab pertanyaan, jawab langsung
-4. Jika tidak tahu, bilang nanti dikabari
-5. JANGAN PERNAH bilang kamu AI, bot, atau autoreply
-6. Variasikan jawaban`,
-      closing: `_~autoreply by ${ownerName.toLowerCase()}_`,
-    };
+    systemPrompt = `${intro}
 
-    systemPrompt = `${t.intro}
+${P.profile(ownerName)}
+- ${personality}
 
-PROFIL ${ownerName.toUpperCase()}:
-- Developer/programmer, suka ngoding
-- Hobi: coding, olahraga, explore hal baru
-- ${t.personality}
-- Muslim Indonesia
+${P.timeContext}
+- ${ctx.tanggalStr}
+- ${ctx.waktuStr} (${ctx.waktu})
+${ctx.konteksEvent ? '- Event: ' + ctx.konteksEvent + '\n' : ''}- ${ctx.possibleActivity}: ${ctx.aktivitasStr}
+${P.timeNote(ownerName)}
 
-KONTEKS WAKTU (referensi, bukan aturan ketat):
-- Tanggal: ${ctx.tanggalStr}, ${ctx.konteksHari}
-- Jam: ${ctx.waktuStr} (${ctx.waktu})
-${ctx.konteksEvent ? '- Event: ' + ctx.konteksEvent + '\n' : ''}- Kemungkinan aktivitas: ${ctx.aktivitasStr}
-Catatan: ini hanya kemungkinan, ${ownerName} bisa saja melakukan hal lain.
-
-ATURAN MEMBALAS:
-${t.rules}
-WAJIB: akhiri setiap pesan dengan baris baru lalu tulis: ${t.closing}`;
+${P.rulesHeader}
+${rules}
+${P.closingRule(ownerName)}`;
   } else {
     systemPrompt = config.ai.systemPrompt;
   }

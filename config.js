@@ -7,6 +7,17 @@
 
 module.exports = {
 
+  // ─── BAHASA / LANGUAGE ───
+  // Bahasa yang dipakai bot untuk semua output (command, AI prompt, web page)
+  // Pilihan: "id" (Indonesia), "en" (English)
+  // Atau tambah bahasa baru di folder locales/
+  language: "id",
+
+  // Timezone untuk deteksi waktu (format IANA)
+  // Contoh: "Asia/Jakarta", "America/New_York", "Europe/London", "Asia/Tokyo"
+  timezone: "Asia/Jakarta",
+
+
   // ─── AWAY MODE ───
   // Bot otomatis reply saat kamu ga aktif
   awayMode: {
