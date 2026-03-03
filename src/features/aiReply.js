@@ -127,7 +127,7 @@ function markLimited(provider, index) {
 }
 
 /**
- * Bangun konteks dinamis berdasarkan waktu, hari, bulan
+ * Bangun konteks dinamis berdasarkan waktu, hari, bulan, event
  * AI jadi tau situasi owner tanpa perlu diketik manual
  */
 function buildDynamicContext() {
@@ -136,65 +136,127 @@ function buildDynamicContext() {
   const jam = jakarta.getHours();
   const menit = jakarta.getMinutes();
   const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][jakarta.getDay()];
-  const bulan = jakarta.getMonth(); // 0-11
+  const bulanIdx = jakarta.getMonth(); // 0-11
+  const bulanNama = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][bulanIdx];
   const tanggal = jakarta.getDate();
+  const tahun = jakarta.getFullYear();
   const waktuStr = `${String(jam).padStart(2,'0')}:${String(menit).padStart(2,'0')} WIB`;
+  const tanggalStr = `${tanggal} ${bulanNama} ${tahun}`;
 
-  // Deteksi waktu
+  // ─── Deteksi waktu & aktivitas ───
   let waktu = '';
-  let aktivitas = '';
-  if (jam >= 3 && jam < 5) {
+  let aktivitas = [];
+  if (jam >= 0 && jam < 3) {
+    waktu = 'tengah malam';
+    aktivitas = ['kemungkinan sudah tidur pulas', 'mungkin begadang ngoding project', 'deep sleep'];
+  } else if (jam >= 3 && jam < 5) {
     waktu = 'subuh/dini hari';
-    aktivitas = 'kemungkinan masih tidur atau baru bangun untuk sahur (jika puasa)';
+    aktivitas = ['kemungkinan masih tidur', 'mungkin baru bangun sahur (kalau bulan puasa)'];
   } else if (jam >= 5 && jam < 7) {
     waktu = 'pagi buta';
-    aktivitas = 'mungkin baru bangun, mandi, siap-siap beraktivitas';
+    aktivitas = ['baru bangun tidur', 'mandi dan siap-siap', 'sarapan'];
   } else if (jam >= 7 && jam < 12) {
-    waktu = 'pagi/menjelang siang';
-    aktivitas = 'kemungkinan lagi kerja, kuliah, atau meeting';
+    waktu = 'pagi';
+    aktivitas = ['lagi kerja atau kuliah', 'meeting', 'ngoding project', 'fokus depan laptop'];
   } else if (jam >= 12 && jam < 14) {
     waktu = 'siang';
-    aktivitas = 'mungkin lagi istirahat makan siang, sholat dzuhur, atau break sebentar';
+    aktivitas = ['istirahat makan siang', 'sholat dzuhur', 'rehat sebentar dari kerja'];
   } else if (jam >= 14 && jam < 17) {
     waktu = 'sore';
-    aktivitas = 'kemungkinan masih kerja/kuliah, atau lagi di perjalanan pulang';
+    aktivitas = ['masih kerja/kuliah', 'ngoding lagi', 'lagi di perjalanan', 'olahraga sore'];
   } else if (jam >= 17 && jam < 19) {
     waktu = 'menjelang maghrib';
-    aktivitas = 'mungkin lagi perjalanan pulang, istirahat, atau buka puasa (jika puasa)';
+    aktivitas = ['perjalanan pulang', 'istirahat', 'sholat maghrib', 'olahraga'];
   } else if (jam >= 19 && jam < 22) {
     waktu = 'malam';
-    aktivitas = 'kemungkinan lagi santai, nonton, main game, atau ngerjain sesuatu';
+    aktivitas = ['santai', 'nonton', 'main game', 'ngoding side project', 'scrolling sosmed', 'quality time'];
   } else {
     waktu = 'larut malam';
-    aktivitas = 'kemungkinan sudah tidur atau begadang';
+    aktivitas = ['kemungkinan sudah tidur', 'mungkin begadang ngoding', 'rebahan sambil scroll HP'];
   }
+  // Pilih 1-2 aktivitas random biar ga monoton
+  const aktivitasStr = aktivitas.sort(() => Math.random() - 0.5).slice(0, 2).join(' atau ');
 
-  // Deteksi hari
+  // ─── Deteksi hari ───
   let konteksHari = '';
-  if (hari === 'Jumat') {
-    konteksHari = 'Hari Jumat — mungkin sholat Jumat (jika jam 11-13).';
-  } else if (hari === 'Sabtu' || hari === 'Minggu') {
-    konteksHari = `Hari ${hari} (weekend) — kemungkinan libur, santai, atau hangout.`;
+  const isWeekend = hari === 'Sabtu' || hari === 'Minggu';
+  if (hari === 'Jumat' && jam >= 11 && jam <= 13) {
+    konteksHari = 'Hari Jumat, jam sholat Jumat — kemungkinan lagi di masjid.';
+  } else if (isWeekend) {
+    konteksHari = `${hari} (weekend) — kemungkinan libur, santai, hangout, atau ngoding project pribadi.`;
   } else {
-    konteksHari = `Hari ${hari} (weekday) — kemungkinan hari kerja/kuliah biasa.`;
+    konteksHari = `${hari} (weekday) — hari kerja/kuliah biasa.`;
   }
 
-  // Deteksi Ramadan (estimasi 2026: 18 Feb - 19 Mar)
-  let konteksRamadan = '';
-  if ((bulan === 1 && tanggal >= 18) || (bulan === 2 && tanggal <= 19)) {
-    konteksRamadan = 'Sekarang bulan Ramadan. Owner kemungkinan sedang puasa. ';
-    if (jam >= 3 && jam < 5) konteksRamadan += 'Mungkin lagi sahur atau habis sahur.';
-    else if (jam >= 17 && jam < 19) konteksRamadan += 'Sebentar lagi buka puasa.';
-    else if (jam >= 19 && jam < 21) konteksRamadan += 'Mungkin habis buka puasa atau sholat tarawih.';
+  // ─── Deteksi event/hari besar ───
+  // Ramadan bergeser ~11 hari per tahun (2024: 12 Mar-10 Apr, 2025: 1 Mar-30 Mar, 2026: 18 Feb-19 Mar, 2027: 8 Feb-9 Mar)
+  const ramadanDates = {
+    2024: { start: [2, 12], end: [3, 10] },  // bulan 0-indexed
+    2025: { start: [2, 1],  end: [2, 30] },
+    2026: { start: [1, 18], end: [2, 19] },
+    2027: { start: [1, 8],  end: [2, 9] },
+    2028: { start: [0, 28], end: [1, 26] },
+    2029: { start: [0, 16], end: [1, 14] },
+    2030: { start: [0, 6],  end: [1, 4] },
+  };
+
+  let events = [];
+
+  // Cek Ramadan
+  const ramadan = ramadanDates[tahun];
+  if (ramadan) {
+    const startDate = new Date(tahun, ramadan.start[0], ramadan.start[1]);
+    const endDate = new Date(tahun, ramadan.end[0], ramadan.end[1]);
+    if (jakarta >= startDate && jakarta <= endDate) {
+      let ramadanCtx = 'Bulan Ramadan — owner sedang puasa.';
+      if (jam >= 3 && jam < 5) ramadanCtx += ' Waktu sahur.';
+      else if (jam >= 17 && jam < 19) ramadanCtx += ' Sebentar lagi buka puasa.';
+      else if (jam >= 19 && jam < 21) ramadanCtx += ' Habis buka puasa / sholat tarawih.';
+      events.push(ramadanCtx);
+    }
   }
+
+  // Event nasional & internasional (tanggal-bulan)
+  const key = `${tanggal}-${bulanIdx}`;
+  const holidays = {
+    '1-0':  'Tahun Baru',
+    '14-1': 'Valentine\'s Day',
+    '8-2':  'Hari Perempuan Internasional',
+    '22-3': 'Hari Bumi',
+    '1-4':  'Hari Buruh Internasional',
+    '2-4':  'Hari Pendidikan Nasional',
+    '20-4': 'Hari Kebangkitan Nasional',
+    '1-5':  'Hari Lahir Pancasila',
+    '17-7': 'HUT Kemerdekaan RI',
+    '10-10':'Hari Kesehatan Mental Sedunia',
+    '28-9': 'Hari Sumpah Pemuda',
+    '10-10':'Hari Pahlawan',
+    '25-11':'Natal',
+    '31-11':'Malam Tahun Baru',
+  };
+  // Cek range (H-1 dan H+0)
+  const holidayToday = holidays[key];
+  if (holidayToday) events.push(`Hari ini ${holidayToday}.`);
+
+  // Seasonal context
+  if (bulanIdx >= 5 && bulanIdx <= 8) {
+    // Juni-September: musim kering/liburan
+    if (bulanIdx === 5 || bulanIdx === 6) events.push('Musim liburan sekolah/kuliah.');
+  } else if (bulanIdx === 11) {
+    events.push('Akhir tahun — suasana liburan.');
+  }
+
+  const konteksEvent = events.length > 0 ? events.join(' ') : '';
 
   return {
     waktu,
     waktuStr,
+    tanggalStr,
     hari,
-    aktivitas,
+    isWeekend,
+    aktivitasStr,
     konteksHari,
-    konteksRamadan,
+    konteksEvent,
   };
 }
 
@@ -211,16 +273,23 @@ async function callGroq(keyIdx, prompt, mode) {
     systemPrompt = `Kamu adalah ${ownerName}. Kamu BUKAN AI atau bot — kamu adalah manusia bernama ${ownerName}.
 Kamu sedang tidak bisa balas chat langsung karena HP kamu lagi ga dipegang.
 
+TENTANG KAMU (${ownerName}):
+- Seorang developer/programmer yang suka ngoding
+- Hobi: coding, olahraga, explore teknologi baru
+- Kalau senggang suka ngoding side project atau olahraga
+- Bahasa sehari-hari: Indonesia, gaul, santai
+
 SITUASI SEKARANG:
+- Tanggal: ${ctx.tanggalStr}
 - Waktu: ${ctx.waktuStr} (${ctx.waktu})
 - ${ctx.konteksHari}
-${ctx.konteksRamadan ? '- ' + ctx.konteksRamadan : ''}- Kemungkinan aktivitas: ${ctx.aktivitas}
+${ctx.konteksEvent ? '- ' + ctx.konteksEvent + '\n' : ''}- Kemungkinan aktivitas: ${ctx.aktivitasStr}
 
 CARA BALAS:
-- Balas seolah kamu ${ownerName} yang lagi AFK
+- Balas seolah kamu ${ownerName} yang lagi sibuk/AFK
 - Pake bahasa Indonesia sehari-hari, gaul, santai, casual
 - Jawab singkat 1-3 kalimat aja
-- Sesuaikan jawaban dengan situasi waktu sekarang (misal kalo malam bilang lagi tidur, kalo siang bilang lagi kerja/kuliah)
+- Sesuaikan jawaban dengan konteks waktu dan event di atas
 - Boleh pake emoji dikit
 - JANGAN PERNAH bilang kamu AI, bot, atau autoreply
 - Kalo ditanya sesuatu yang ga tau, bilang "ntar gw kabarin ya" atau "gw cek dulu ya"
