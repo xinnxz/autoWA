@@ -216,6 +216,13 @@ async function start() {
 
 start();
 
+// ─── Keep-alive: ping diri sendiri tiap 4 menit ───
+// Koyeb free tier sleep kalo ga ada traffic. Ini mencegahnya.
+setInterval(() => {
+  const url = `http://localhost:${PORT}/health`;
+  require('http').get(url, () => {}).on('error', () => {});
+}, 4 * 60 * 1000); // 4 menit
+
 // ─── Graceful Shutdown ───
 process.on('SIGINT', () => {
   logger.info('Bot shutting down...');
