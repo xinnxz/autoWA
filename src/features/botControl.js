@@ -572,4 +572,4 @@ function getGroupStyle(groupId) {
   return groupSettings[groupId]?.style || null;
 }
 
-module.exports = { handleCommand, isAway, addToInbox, botState, runtimeOverrides, groupSettings, isGroupEnabled, getGroupStyle };
+module.exports = { handleCommand, isAway, addToInbox, botState, runtimeOverrides, groupSettings, isGroupEnabled, getGroupStyle, inbox };

@@ -26,7 +26,7 @@ let currentQR = null;      // QR code string saat ini
 let qrGeneratedAt = null;  // Timestamp kapan QR dibuat
 let isConnected = false;
 
-// ─── Express server (untuk QR di cloud + health check) ───
+// ─── Express server (untuk QR di cloud + health check + dashboard) ───
 const app = express();
 
 // Health check endpoint (dibutuhkan Koyeb)
@@ -36,6 +36,95 @@ app.get('/health', (req, res) => {
     uptime: process.uptime(),
     owner: process.env.OWNER_NAME || 'Not set',
   });
+});
+
+// ─── Dashboard Auth middleware ───
+function authDashboard(req, res, next) {
+  const key = req.query.key || '';
+  const ownerNumber = process.env.OWNER_NUMBER || '';
+  if (!ownerNumber || key !== ownerNumber) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+// ─── Dashboard page ───
+const path = require('path');
+app.get('/dashboard', authDashboard, (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'web', 'dashboard.html'));
+});
+
+// ─── API: Stats (semua data untuk dashboard) ───
+app.get('/api/stats', authDashboard, (req, res) => {
+  const { botState, runtimeOverrides, groupSettings } = require('./src/features/botControl');
+  
+  // Count API keys
+  let groqKeys = 0, geminiKeys = 0;
+  for (let i = 1; i <= 20; i++) {
+    if (process.env[`GROQ_API_KEY_${i}`]) groqKeys++;
+    if (process.env[`GEMINI_API_KEY_${i}`]) geminiKeys++;
+  }
+  if (!groqKeys && process.env.GROQ_API_KEY) groqKeys = 1;
+  if (!geminiKeys && process.env.GEMINI_API_KEY) geminiKeys = 1;
+
+  // Get inbox
+  const { addToInbox } = require('./src/features/botControl');
+  let inbox = [];
+  try { inbox = require('./src/features/botControl').inbox || []; } catch(e) {}
+  
+  // Get group list
+  const groups = Object.entries(groupSettings).map(([id, s]) => ({
+    id: id.split('@')[0], enabled: s.enabled, style: s.style
+  }));
+
+  // History contacts count
+  let historyContacts = 0;
+  try {
+    const aiReply = require('./src/features/aiReply');
+    // chatHistory is internal, estimate from clearHistory
+    historyContacts = '~';
+  } catch(e) {}
+
+  res.json({
+    connected: isConnected,
+    uptime: process.uptime(),
+    owner: process.env.OWNER_NAME || 'Bot',
+    awayMode: botState.awayMode,
+    dnd: botState.dndUntil ? Date.now() < botState.dndUntil : false,
+    dndUntil: botState.dndUntil,
+    style: runtimeOverrides.replyStyle || config.ai.replyStyle || 'santai',
+    model: runtimeOverrides.model || config.ai.model || 'llama-3.3-70b-versatile',
+    language: config.language || 'id',
+    timezone: config.timezone || 'Asia/Jakarta',
+    contextualMode: config.ai.contextualMode,
+    replyDelay: config.safety.replyDelay,
+    maxReplies: config.safety.maxRepliesPerContact,
+    cooldown: config.safety.cooldownPerContact,
+    scheduleEnabled: config.awayMode.schedule?.enabled || false,
+    scheduleStart: config.awayMode.schedule?.sleepStart || '',
+    scheduleEnd: config.awayMode.schedule?.sleepEnd || '',
+    historyEnabled: config.ai.chatHistory?.enabled || false,
+    historyMax: config.ai.chatHistory?.maxMessages || 6,
+    historyAge: config.ai.chatHistory?.maxAge || 30,
+    historyContacts,
+    groqKeys,
+    geminiKeys,
+    inboxCount: inbox.length,
+    inbox: inbox.slice(-50),
+    groupCount: groups.filter(g => g.enabled).length,
+    groups,
+  });
+});
+
+// ─── API: Clear inbox ───
+app.get('/api/inbox/clear', authDashboard, (req, res) => {
+  try {
+    const botControl = require('./src/features/botControl');
+    if (botControl.inbox) botControl.inbox.length = 0;
+    res.json({ ok: true });
+  } catch(e) {
+    res.json({ ok: false, error: e.message });
+  }
 });
 
 // QR code page (untuk scan dari browser)

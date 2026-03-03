@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoWA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#09090b;--surface:#18181b;--border:#27272a;--border-hover:#3f3f46;
+  --text:#fafafa;--text-2:#a1a1aa;--text-3:#71717a;
+  --accent:#22c55e;--accent-dim:rgba(34,197,94,.12);
+  --red:#ef4444;--red-dim:rgba(239,68,68,.12);
+  --amber:#f59e0b;--amber-dim:rgba(245,158,11,.12);
+  --blue:#3b82f6;--blue-dim:rgba(59,130,246,.12);
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+
+/* ── Layout: sidebar + main ── */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:240px;border-right:1px solid var(--border);padding:0;display:flex;flex-direction:column;position:fixed;height:100vh;background:var(--bg);z-index:10}
+.main{margin-left:240px;flex:1;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar-header{padding:20px 16px 12px;display:flex;align-items:center;gap:10px}
+.sidebar-header .logo{width:32px;height:32px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;color:#000}
+.sidebar-header .brand{font-weight:600;font-size:15px;letter-spacing:-.02em}
+.sidebar-header .badge{font-size:10px;background:var(--accent-dim);color:var(--accent);padding:2px 6px;border-radius:4px;margin-left:auto;font-weight:500}
+
+.sidebar-nav{padding:8px;flex:1}
+.nav-section{padding:8px 8px 4px;font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-2);transition:all .15s}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{background:var(--surface);color:var(--text)}
+.nav-item .icon{width:16px;text-align:center;font-size:13px;opacity:.7}
+.nav-item .shortcut{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);background:var(--surface);padding:1px 5px;border-radius:3px;border:1px solid var(--border)}
+
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.sidebar-footer .avatar{width:28px;height:28px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px}
+.sidebar-footer .owner-info{flex:1;min-width:0}
+.sidebar-footer .owner-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-footer .owner-role{font-size:11px;color:var(--text-3)}
+
+/* ── Main content ── */
+.topbar{height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;background:var(--bg);z-index:5}
+.topbar h1{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.topbar .sep{color:var(--text-3)}
+.topbar .page-title{color:var(--text-2);font-size:14px}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+
+.content{padding:24px}
+.content-header{display:flex;align-items:center;margin-bottom:24px;gap:12px}
+.content-header h2{font-size:18px;font-weight:600;letter-spacing:-.02em}
+.content-header .subtitle{color:var(--text-3);font-size:13px;margin-left:4px}
+
+/* ── Status pill ── */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500}
+.pill.green{background:var(--accent-dim);color:var(--accent)}
+.pill.red{background:var(--red-dim);color:var(--red)}
+.pill.amber{background:var(--amber-dim);color:var(--amber)}
+.pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── Stat grid ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px}
+.stat-card{background:var(--bg);padding:16px 20px}
+.stat-card .label{font-size:12px;color:var(--text-3);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.stat-card .value{font-size:22px;font-weight:600;letter-spacing:-.03em;font-family:'JetBrains Mono','Inter',monospace}
+.stat-card .sub{font-size:11px;color:var(--text-3);margin-top:4px}
+
+/* ── Sections ── */
+.section{border:1px solid var(--border);border-radius:8px;margin-bottom:16px;overflow:hidden}
+.section-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--surface)}
+.section-header h3{font-size:13px;font-weight:600}
+.section-header .count{font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace}
+.section-header .actions{margin-left:auto;display:flex;gap:6px}
+
+/* ── Table rows ── */
+.row{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);gap:12px;transition:background .1s}
+.row:last-child{border-bottom:none}
+.row:hover{background:var(--surface)}
+.row .icon-col{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.row .icon-col.green{background:var(--accent-dim);color:var(--accent)}
+.row .icon-col.blue{background:var(--blue-dim);color:var(--blue)}
+.row .icon-col.amber{background:var(--amber-dim);color:var(--amber)}
+.row .icon-col.red{background:var(--red-dim);color:var(--red)}
+.row .info{flex:1;min-width:0}
+.row .info .primary{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .info .secondary{font-size:11px;color:var(--text-3)}
+.row .meta{font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace;text-align:right;flex-shrink:0}
+
+/* ── Config table ── */
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border)}
+.config-item{padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+.config-item:nth-child(2n){border-right:none}
+.config-item .key{font-size:12px;color:var(--text-3)}
+.config-item .val{font-size:13px;font-family:'JetBrains Mono',monospace;font-weight:500}
+.config-item .val.on{color:var(--accent)}
+.config-item .val.off{color:var(--red)}
+
+/* ── Buttons ── */
+.btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn:hover{background:var(--border);color:var(--text);border-color:var(--border-hover)}
+.btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:500}
+.btn.primary:hover{opacity:.9}
+.btn.danger{color:var(--red);border-color:var(--red-dim)}
+.btn.danger:hover{background:var(--red-dim)}
+
+/* ── Empty state ── */
+.empty{padding:40px;text-align:center;color:var(--text-3);font-size:13px}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--border);padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;z-index:100}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── Mobile ── */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .config-grid{grid-template-columns:1fr}
+  .config-item{border-right:none!important}
+  .topbar{padding:0 16px}
+  .content{padding:16px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">A</div>
+      <span class="brand">AutoWA</span>
+      <span class="badge">v2</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" data-page="dashboard">
+        <span class="icon">◫</span> Dashboard
+        <span class="shortcut">D</span>
+      </div>
+      <div class="nav-item" data-page="inbox">
+        <span class="icon">✉</span> Inbox
+        <span class="shortcut" id="inbox-badge">0</span>
+      </div>
+
+      <div class="nav-section">Settings</div>
+      <div class="nav-item" data-page="config">
+        <span class="icon">⚙</span> Configuration
+      </div>
+      <div class="nav-item" data-page="groups">
+        <span class="icon">◎</span> Groups
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="avatar">👤</div>
+      <div class="owner-info">
+        <div class="owner-name" id="owner-name">—</div>
+        <div class="owner-role">owner</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <h1>AutoWA</h1>
+      <span class="sep">/</span>
+      <span class="page-title" id="page-title">Dashboard</span>
+      <div class="right">
+        <span class="pill green" id="status-pill"><span class="dot"></span> <span id="status-text">Loading</span></span>
+      </div>
+    </div>
+
+    <!-- Page: Dashboard -->
+    <div class="content page" id="page-dashboard">
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">⬆ Uptime</div>
+          <div class="value" id="s-uptime">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">✉ Inbox</div>
+          <div class="value" id="s-inbox">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">🤖 Model</div>
+          <div class="value" id="s-model">—</div>
+          <div class="sub" id="s-model-sub"></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">🎨 Style</div>
+          <div class="value" id="s-style">—</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h3>Activity</h3>
+          <span class="count" id="activity-count"></span>
+          <div class="actions">
+            <button class="btn" onclick="refreshData()">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="activity-list">
+          <div class="empty">No activity yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Inbox -->
+    <div class="content page" id="page-inbox" style="display:none">
+      <div class="content-header">
+        <h2>Inbox</h2>
+        <span class="subtitle" id="inbox-subtitle">Messages received while away</span>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <h3>Messages</h3>
+          <span class="count" id="inbox-count">0</span>
+          <div class="actions">
+            <button class="btn danger" onclick="clearInbox()">🗑 Clear</button>
+          </div>
+        </div>
+        <div id="inbox-list">
+          <div class="empty">No messages</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Config -->
+    <div class="content page" id="page-config" style="display:none">
+      <div class="content-header">
+        <h2>Configuration</h2>
+        <span class="subtitle">Current bot settings</span>
+      </div>
+      <div class="section">
+        <div class="section-header"><h3>Bot Settings</h3></div>
+        <div class="config-grid" id="config-grid"></div>
+      </div>
+    </div>
+
+    <!-- Page: Groups -->
+    <div class="content page" id="page-groups" style="display:none">
+      <div class="content-header">
+        <h2>Groups</h2>
+        <span class="subtitle">Active group configurations</span>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <h3>Enabled Groups</h3>
+          <span class="count" id="group-count">0</span>
+        </div>
+        <div id="group-list">
+          <div class="empty">No groups enabled. Use !group on in a group chat.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = location.origin;
+const KEY = new URLSearchParams(location.search).get('key') || '';
+let data = {};
+
+function api(path) {
+  return fetch(`${API}${path}?key=${KEY}`).then(r => {
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  });
+}
+
+function fmtUptime(sec) {
+  if (sec < 60) return sec + 's';
+  if (sec < 3600) return Math.floor(sec/60) + 'm';
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60);
+  return h + 'h ' + m + 'm';
+}
+
+function fmtTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = (now - d)/1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return d.toLocaleDateString();
+}
+
+function shortModel(m) {
+  if (!m) return '—';
+  const parts = m.split('/');
+  const name = parts[parts.length - 1];
+  if (name.length > 12) return name.substring(0, 12) + '…';
+  return name;
+}
+
+async function refreshData() {
+  try {
+    data = await api('/api/stats');
+    render();
+    showToast('Data refreshed');
+  } catch (e) {
+    if (e.message === '401') {
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#71717a;font-family:Inter,sans-serif;font-size:14px">Unauthorized — add ?key=YOUR_OWNER_NUMBER to the URL</div>';
+    }
+  }
+}
+
+function render() {
+  const d = data;
+  document.getElementById('owner-name').textContent = d.owner || 'Bot';
+  document.getElementById('s-uptime').textContent = fmtUptime(Math.floor(d.uptime || 0));
+  document.getElementById('s-inbox').textContent = d.inboxCount || 0;
+  document.getElementById('inbox-badge').textContent = d.inboxCount || 0;
+  document.getElementById('s-model').textContent = shortModel(d.model);
+  document.getElementById('s-model-sub').textContent = d.model || '';
+  document.getElementById('s-style').textContent = d.style || '—';
+
+  // Status
+  const pill = document.getElementById('status-pill');
+  const statusText = document.getElementById('status-text');
+  if (d.connected) {
+    if (d.awayMode) {
+      statusText.textContent = d.dnd ? 'DND' : 'Away';
+      pill.className = 'pill amber';
+    } else {
+      statusText.textContent = 'Online';
+      pill.className = 'pill green';
+    }
+  } else {
+    statusText.textContent = 'Disconnected';
+    pill.className = 'pill red';
+  }
+
+  // Inbox
+  const inboxList = document.getElementById('inbox-list');
+  const inbox = d.inbox || [];
+  document.getElementById('inbox-count').textContent = inbox.length;
+  if (inbox.length === 0) {
+    inboxList.innerHTML = '<div class="empty">No messages while away</div>';
+  } else {
+    inboxList.innerHTML = inbox.slice().reverse().map(m => `
+      <div class="row">
+        <div class="icon-col blue">✉</div>
+        <div class="info">
+          <div class="primary">${esc(m.name || m.from)}</div>
+          <div class="secondary">${esc(m.text?.substring(0,80) || '')}</div>
+        </div>
+        <div class="meta">${fmtTime(m.time)}</div>
+      </div>
+    `).join('');
+  }
+
+  // Activity
+  const actList = document.getElementById('activity-list');
+  const acts = [];
+  if (d.awayMode) acts.push({ icon: '🔴', cls: 'amber', text: 'Away mode active', sub: d.dnd ? `DND until ${new Date(d.dndUntil).toLocaleTimeString()}` : 'Auto-reply enabled', time: '' });
+  if (d.scheduleEnabled) acts.push({ icon: '🕐', cls: 'blue', text: `Scheduled away: ${d.scheduleStart} – ${d.scheduleEnd}`, sub: 'Automatic sleep schedule', time: '' });
+  if (d.groupCount > 0) acts.push({ icon: '◎', cls: 'green', text: `${d.groupCount} group(s) active`, sub: 'Accepting group messages', time: '' });
+  if (d.historyEnabled) acts.push({ icon: '🧠', cls: 'blue', text: `Chat history: ${d.historyContacts || 0} contacts`, sub: `Max ${d.historyMax || 6} msgs, ${d.historyAge || 30}m TTL`, time: '' });
+  if (d.groqKeys > 0) acts.push({ icon: '⚡', cls: 'green', text: `Groq API: ${d.groqKeys} key(s)`, sub: 'Primary AI provider', time: '' });
+  if (d.geminiKeys > 0) acts.push({ icon: '✦', cls: 'blue', text: `Gemini API: ${d.geminiKeys} key(s)`, sub: 'Fallback AI provider', time: '' });
+  document.getElementById('activity-count').textContent = acts.length;
+  if (acts.length === 0) {
+    actList.innerHTML = '<div class="empty">No activity</div>';
+  } else {
+    actList.innerHTML = acts.map(a => `
+      <div class="row">
+        <div class="icon-col ${a.cls}">${a.icon}</div>
+        <div class="info">
+          <div class="primary">${a.text}</div>
+          <div class="secondary">${a.sub}</div>
+        </div>
+        <div class="meta">${a.time}</div>
+      </div>
+    `).join('');
+  }
+
+  // Config
+  const cfgGrid = document.getElementById('config-grid');
+  const cfgs = [
+    ['Language', d.language || 'id'],
+    ['Timezone', d.timezone || 'Asia/Jakarta'],
+    ['Away Mode', d.awayMode ? 'ON' : 'OFF', d.awayMode],
+    ['Contextual AI', d.contextualMode ? 'ON' : 'OFF', d.contextualMode],
+    ['Reply Delay', (d.replyDelay || 0) + 'ms'],
+    ['Max Reply/Contact', (d.maxReplies || 0) + 'x'],
+    ['Cooldown', (d.cooldown || 0) + 's'],
+    ['AI Model', d.model || '—'],
+    ['Reply Style', d.style || '—'],
+    ['History', d.historyEnabled ? 'ON' : 'OFF', d.historyEnabled],
+  ];
+  cfgGrid.innerHTML = cfgs.map(([k,v,bool]) => {
+    const cls = bool === true ? 'on' : bool === false ? 'off' : '';
+    return `<div class="config-item"><span class="key">${k}</span><span class="val ${cls}">${v}</span></div>`;
+  }).join('');
+
+  // Groups
+  const groupList = document.getElementById('group-list');
+  const groups = d.groups || [];
+  document.getElementById('group-count').textContent = groups.length;
+  if (groups.length === 0) {
+    groupList.innerHTML = '<div class="empty">No groups enabled. Use !group on in a group chat.</div>';
+  } else {
+    groupList.innerHTML = groups.map(g => `
+      <div class="row">
+        <div class="icon-col green">◎</div>
+        <div class="info">
+          <div class="primary">${esc(g.id)}</div>
+          <div class="secondary">Style: ${g.style || 'default'}</div>
+        </div>
+        <div class="meta">${g.enabled ? '● active' : '○ off'}</div>
+      </div>
+    `).join('');
+  }
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+async function clearInbox() {
+  if (!confirm('Clear all inbox messages?')) return;
+  try {
+    await api('/api/inbox/clear');
+    showToast('Inbox cleared');
+    refreshData();
+  } catch(e) { showToast('Error'); }
+}
+
+// Navigation
+document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    const page = item.dataset.page;
+    document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+    document.getElementById('page-' + page).style.display = '';
+    document.getElementById('page-title').textContent = item.textContent.trim().split('\n')[0].trim();
+  });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  const map = { d: 'dashboard', i: 'inbox', c: 'config', g: 'groups' };
+  const page = map[e.key.toLowerCase()];
+  if (page) {
+    const item = document.querySelector(`[data-page="${page}"]`);
+    if (item) item.click();
+  }
+  if (e.key === 'r') refreshData();
+});
+
+// Auto-refresh
+refreshData();
+setInterval(refreshData, 15000);
+</script>
+</body>
+</html>
