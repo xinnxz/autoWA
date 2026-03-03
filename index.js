@@ -22,7 +22,8 @@ const logger = require('./src/utils/logger');
 const PORT = process.env.PORT || 3000;
 
 // ─── State untuk QR Web ───
-let currentQR = null;  // QR code string saat ini
+let currentQR = null;      // QR code string saat ini
+let qrGeneratedAt = null;  // Timestamp kapan QR dibuat
 let isConnected = false;
 
 // ─── Express server (untuk QR di cloud + health check) ───
@@ -88,6 +89,10 @@ app.get('/', async (req, res) => {
     return;
   }
 
+  // Hitung sisa waktu QR (expire ~60 detik dari pembuatan)
+  const elapsed = qrGeneratedAt ? Math.floor((Date.now() - qrGeneratedAt) / 1000) : 0;
+  const remaining = Math.max(60 - elapsed, 5); // minimal 5 detik
+
   // Generate QR sebagai gambar
   const qrImage = await QRCode.toDataURL(currentQR, { width: 300, margin: 2 });
   
@@ -116,12 +121,12 @@ app.get('/', async (req, res) => {
         <h2>Scan QR Code</h2>
         <p>Buka WhatsApp > Settings > Linked Devices > Link a Device</p>
         <img src="${qrImage}" alt="QR Code" />
-        <div class="timer" id="timer">60</div>
-        <div class="progress-bar"><div class="progress-fill" id="bar" style="width:100%"></div></div>
+        <div class="timer" id="timer">${remaining}</div>
+        <div class="progress-bar"><div class="progress-fill" id="bar" style="width:${(remaining/60*100).toFixed(1)}%"></div></div>
         <p id="label">detik tersisa</p>
       </div>
       <script>
-        let sec = 60;
+        let sec = ${remaining};
         const timer = document.getElementById('timer');
         const bar = document.getElementById('bar');
         const label = document.getElementById('label');
@@ -192,11 +197,13 @@ async function start() {
     const sock = await connectToWhatsApp(handleMessage, (qr) => {
       // Callback untuk QR update
       currentQR = qr;
+      qrGeneratedAt = Date.now();
       logger.info('QR Code baru tersedia! Scan dari browser.');
     }, () => {
       // Callback untuk connected
       isConnected = true;
       currentQR = null;
+      qrGeneratedAt = null;
     });
     
     logger.info('Bot siap! Menunggu pesan masuk...');
