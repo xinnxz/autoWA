@@ -31,6 +31,18 @@ const botState = {
 // ─── Inbox: simpan pesan masuk saat away ───
 // Format: [{ from: '628xxx', name: 'John', text: 'Halo', time: Date }]
 const inbox = [];
+const MAX_INBOX = 100; // Batas maksimum inbox agar ga makan memory
+
+// ─── Auto-cleanup inbox: hapus pesan > 24 jam tiap 1 jam ───
+setInterval(() => {
+  const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 24 jam lalu
+  let removed = 0;
+  while (inbox.length > 0 && new Date(inbox[0].time).getTime() < cutoff) {
+    inbox.shift();
+    removed++;
+  }
+  if (removed > 0) logger.debug(`Inbox cleanup: ${removed} pesan lama dihapus`);
+}, 60 * 60 * 1000);
 
 /**
  * Cek apakah bot sedang dalam mode away (termasuk DND)
@@ -61,8 +73,8 @@ function addToInbox(from, name, text) {
     text: text.length > 100 ? text.substring(0, 100) + '...' : text,
     time: new Date(),
   });
-  // Batasi inbox max 50 pesan (biar ga kebanyakan)
-  if (inbox.length > 50) inbox.shift();
+  // Batasi inbox agar ga makan memory
+  if (inbox.length > MAX_INBOX) inbox.shift();
 }
 
 /**
