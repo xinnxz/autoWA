@@ -154,6 +154,7 @@ Kirim dari chat ke diri sendiri di WhatsApp:
 
 | Command | Fungsi |
 |---------|--------|
+| `!help` | Tampilkan daftar command |
 | `!off` | Aktifkan away mode (bot mulai reply) |
 | `!on` | Matikan away mode (bot diam) |
 | `!dnd 2h` | Away mode 2 jam, mati otomatis |
@@ -191,18 +192,23 @@ Urutan: Groq 1 > 2 > ... > N > Gemini 1 > 2 > ... > N > Template message
 
 ## Konfigurasi
 
-Edit `config.json`:
+Edit `config.js` — setiap setting udah ada comment penjelasannya di file:
 
 | Setting | Deskripsi |
 |---------|-----------|
-| `awayMode.messages` | Daftar pesan auto-reply |
-| `awayMode.schedule` | Jam tidur (kapan bot aktif otomatis) |
+| `ai.model` | Model AI di Groq (default: `openai/gpt-oss-120b`) |
+| `ai.geminiModel` | Model Gemini fallback (default: `gemini-2.0-flash`) |
+| `ai.contextualMode` | AI reply seolah kamu yang bales |
+| `ai.maxTokens` | Panjang max jawaban AI |
+| `awayMode.messages` | Daftar pesan fallback |
+| `awayMode.schedule` | Jam tidur (away otomatis) |
 | `safety.replyDelay` | Delay sebelum reply (ms) |
 | `safety.maxRepliesPerContact` | Max reply per kontak |
 | `safety.cooldownPerContact` | Cooldown antar reply (detik) |
-| `autoReplies` | Keyword-based auto-reply rules |
-| `ai.contextualMode` | AI reply seolah-olah kamu yang bales |
-| `ai.contextualPrompt` | Prompt untuk AI contextual mode |
+| `cleanup.maxInbox` | Max pesan di inbox |
+| `cleanup.inboxMaxAge` | Hapus inbox lebih dari X jam |
+| `keepAlive.enabled` | Anti-sleep untuk cloud hosting |
+| `keepAlive.intervalMinutes` | Interval ping (menit) |
 
 ---
 
@@ -222,15 +228,16 @@ Edit `config.json`:
 ```
 autoWA/
 ├── index.js                  # entry point + web QR scanner
-├── config.json               # konfigurasi bot
+├── config.js                 # konfigurasi bot (ada comment lengkap)
 ├── .env                      # API keys (jangan commit)
 ├── .env.example              # template .env
+├── LICENSE                   # GPL-3.0
 ├── src/
 │   ├── connection.js         # koneksi WhatsApp (Baileys)
-│   ├── handler.js            # handler pesan masuk
+│   ├── handler.js            # handler pesan masuk + anti-spam
 │   ├── features/
 │   │   ├── aiReply.js        # AI reply (Groq + Gemini, key rotation)
-│   │   └── botControl.js     # command bot (!on, !off, dll)
+│   │   └── botControl.js     # command bot (!help, !on, !off, dll)
 │   └── utils/
 │       └── logger.js         # logger
 ├── auth_info/                # session WA (jangan commit)

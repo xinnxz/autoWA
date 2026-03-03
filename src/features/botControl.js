@@ -89,6 +89,25 @@ function addToInbox(from, name, text) {
 async function handleCommand(sock, msg) {
   const text = msg.text.trim();
 
+  // ─── !help → Tampilkan semua command ───
+  if (text === '!help') {
+    const helpText = `*Bot Commands*
+
+!help — Tampilkan daftar command ini
+!off — Aktifkan away mode (bot mulai reply)
+!on — Matikan away mode (bot diam)
+!dnd <waktu> — Away mode sementara (misal: !dnd 2h, !dnd 30m)
+!status — Cek status bot sekarang
+!inbox — Lihat chat masuk saat away
+!inbox clear — Hapus semua inbox
+!ai <pertanyaan> — Tanya AI langsung
+!logout — Logout dari WhatsApp
+
+_Commands hanya bisa dijalankan oleh owner._`;
+    await sock.sendMessage(msg.from, { text: helpText });
+    return true;
+  }
+
   // ─── !off → Aktifkan away mode ───
   if (text === '!off') {
     botState.awayMode = true;

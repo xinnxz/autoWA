@@ -85,18 +85,19 @@ function loadKeys() {
   const ctxPrompt = config.ai.contextualPrompt ||
     `Kamu adalah ${ownerName}. Balas seolah kamu ${ownerName} yang lagi AFK. Bahasa gaul, santai. Jawab 1-2 kalimat. Jangan bilang kamu AI. Di akhir tambah: _~autoreply by ${ownerName.toLowerCase()}_`;
 
+  const geminiModelName = config.ai.geminiModel || 'gemini-2.0-flash';
   providers.gemini.prefixModels = [];
   providers.gemini.contextualModels = [];
   for (const key of providers.gemini.keys) {
     const client = new GoogleGenerativeAI(key);
-    providers.gemini.prefixModels.push(client.getGenerativeModel({ model: config.ai.model, systemInstruction: config.ai.systemPrompt }));
-    providers.gemini.contextualModels.push(client.getGenerativeModel({ model: config.ai.model, systemInstruction: ctxPrompt }));
+    providers.gemini.prefixModels.push(client.getGenerativeModel({ model: geminiModelName, systemInstruction: config.ai.systemPrompt }));
+    providers.gemini.contextualModels.push(client.getGenerativeModel({ model: geminiModelName, systemInstruction: ctxPrompt }));
   }
   providers.gemini.cooldowns = new Array(providers.gemini.keys.length).fill(0);
 
   // ─── Summary ───
-  if (providers.groq.keys.length > 0) logger.info(`Loaded ${providers.groq.keys.length} Groq API key(s) 🚀`);
-  if (providers.gemini.keys.length > 0) logger.info(`Loaded ${providers.gemini.keys.length} Gemini API key(s) 🔑`);
+  if (providers.groq.keys.length > 0) logger.info(`Groq: ${providers.groq.keys.length} key(s) | model: ${config.ai.model || 'llama-3.3-70b-versatile'}`);
+  if (providers.gemini.keys.length > 0) logger.info(`Gemini: ${providers.gemini.keys.length} key(s) | model: ${geminiModelName}`);
   
   if (providers.groq.keys.length === 0 && providers.gemini.keys.length === 0) {
     logger.warn('⚠️ Tidak ada API key AI! Fitur AI tidak akan berfungsi.');

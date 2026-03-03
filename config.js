@@ -58,11 +58,15 @@ module.exports = {
     enabled: true,
     prefix: "!ai",              // Command untuk tanya AI langsung (misal: !ai apa itu javascript)
 
-    // Model AI yang dipakai di Groq
+    // Model AI yang dipakai di Groq (primary)
     // Pilihan: "openai/gpt-oss-120b" (paling pintar), "llama-3.3-70b-versatile" (cepat),
     //          "qwen/qwen3-32b", "moonshotai/kimi-k2-instruct"
     // Cek model tersedia: curl https://api.groq.com/openai/v1/models -H "Authorization: Bearer API_KEY"
     model: "openai/gpt-oss-120b",
+
+    // Model Gemini (fallback, kalo semua Groq key habis)
+    // Pilihan: "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"
+    geminiModel: "gemini-2.0-flash",
 
     // System prompt untuk command !ai (bukan contextual reply)
     systemPrompt: "Kamu adalah asisten pribadi. Jawab dalam Bahasa Indonesia yang santai tapi sopan. Jawab singkat dan jelas, maksimal 2 paragraf.",
