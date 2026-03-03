@@ -9,7 +9,9 @@ module.exports = {
 
   // ─── BAHASA / LANGUAGE ───
   // Bahasa yang dipakai bot untuk semua output (command, AI prompt, web page)
-  // Pilihan: "id" (Indonesia), "en" (English)
+  // Pilihan: "id" (Indonesia), "en" (English), "es" (Español), "ar" (العربية),
+  //          "pt" (Português), "ja" (日本語), "hi" (हिन्दी), "ko" (한국어),
+  //          "fr" (Français), "ms" (Bahasa Melayu)
   // Atau tambah bahasa baru di folder locales/
   language: "id",
 
