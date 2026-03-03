@@ -223,12 +223,14 @@ async function start() {
 
 start();
 
-// ─── Keep-alive: ping diri sendiri tiap 4 menit ───
-// Koyeb free tier sleep kalo ga ada traffic. Ini mencegahnya.
-setInterval(() => {
-  const url = `http://localhost:${PORT}/health`;
-  require('http').get(url, () => {}).on('error', () => {});
-}, 4 * 60 * 1000); // 4 menit
+// ─── Keep-alive: ping diri sendiri agar tidak sleep ───
+if (config.keepAlive?.enabled !== false) {
+  const keepAliveMs = (config.keepAlive?.intervalMinutes || 4) * 60 * 1000;
+  setInterval(() => {
+    const url = `http://localhost:${PORT}/health`;
+    require('http').get(url, () => {}).on('error', () => {});
+  }, keepAliveMs);
+}
 
 // ─── Graceful Shutdown ───
 process.on('SIGINT', () => {

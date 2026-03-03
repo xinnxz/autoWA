@@ -31,18 +31,20 @@ const botState = {
 // ─── Inbox: simpan pesan masuk saat away ───
 // Format: [{ from: '628xxx', name: 'John', text: 'Halo', time: Date }]
 const inbox = [];
-const MAX_INBOX = 100; // Batas maksimum inbox agar ga makan memory
+const MAX_INBOX = config.cleanup?.maxInbox || 100;
 
-// ─── Auto-cleanup inbox: hapus pesan > 24 jam tiap 1 jam ───
+// ─── Auto-cleanup inbox ───
+const inboxMaxAge = (config.cleanup?.inboxMaxAge || 24) * 60 * 60 * 1000;
+const inboxCleanupMs = (config.cleanup?.inboxCleanupInterval || 60) * 60 * 1000;
 setInterval(() => {
-  const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 24 jam lalu
+  const cutoff = Date.now() - inboxMaxAge;
   let removed = 0;
   while (inbox.length > 0 && new Date(inbox[0].time).getTime() < cutoff) {
     inbox.shift();
     removed++;
   }
   if (removed > 0) logger.debug(`Inbox cleanup: ${removed} pesan lama dihapus`);
-}, 60 * 60 * 1000);
+}, inboxCleanupMs);
 
 /**
  * Cek apakah bot sedang dalam mode away (termasuk DND)

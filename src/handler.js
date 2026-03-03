@@ -28,7 +28,8 @@ const aiReply = require('./features/aiReply');
 // ─── Cooldown tracker ───
 const contactTracker = new Map();
 
-// ─── Auto-cleanup: bersihkan tracker tiap 30 menit ───
+// ─── Auto-cleanup: bersihkan tracker ───
+const trackerCleanupMs = (config.cleanup?.trackerCleanupInterval || 30) * 60 * 1000;
 setInterval(() => {
   const now = Date.now();
   const cooldownMs = (config.safety.cooldownPerContact || 300) * 1000;
@@ -40,7 +41,7 @@ setInterval(() => {
     }
   }
   if (cleaned > 0) logger.debug(`Cleanup: ${cleaned} kontak dihapus dari tracker`);
-}, 30 * 60 * 1000);
+}, trackerCleanupMs);
 
 function sleep(ms) {
   if (ms <= 0) return Promise.resolve();

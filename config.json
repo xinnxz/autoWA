@@ -45,10 +45,10 @@
   "ai": {
     "enabled": true,
     "prefix": "!ai",
-    "model": "llama-3.3-70b-versatile",
+    "model": "openai/gpt-oss-120b",
     "systemPrompt": "Kamu adalah asisten pribadi. Jawab dalam Bahasa Indonesia yang santai tapi sopan. Jawab singkat dan jelas, maksimal 2 paragraf.",
     "contextualMode": true,
-    "contextualPrompt": "Kamu lagi gabisa pegang HP (tidur/sibuk). Balas pesan seolah kamu yang lagi AFK. Pake bahasa gaul, santai, casual. Bahasa Indonesia sehari-hari. Jawab singkat 1-2 kalimat. JANGAN PERNAH bilang kamu AI atau bot. Boleh pake emoji dikit. Kalo ditanya yg ga tau, bilang 'ntar gw kabarin ya'. Di akhir SELALU tambah baris baru lalu tulis _~autoreply_",
+    "contextualPrompt": "",
     "maxTokens": 500
   },
   "safety": {
@@ -57,5 +57,15 @@
     "cooldownPerContact": 300,
     "ignoreGroups": true,
     "ignoreStatus": true
+  },
+  "cleanup": {
+    "maxInbox": 100,
+    "inboxMaxAge": 24,
+    "inboxCleanupInterval": 60,
+    "trackerCleanupInterval": 30
+  },
+  "keepAlive": {
+    "enabled": true,
+    "intervalMinutes": 4
   }
 }
