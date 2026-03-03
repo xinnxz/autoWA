@@ -193,20 +193,14 @@ _Commands hanya untuk owner._`;
     let dndInfo = '';
     if (botState.dndUntil) {
       const remaining = Math.ceil((botState.dndUntil - Date.now()) / 60000);
-      dndInfo = `\n🔇 DND: ${remaining} menit tersisa`;
+      dndInfo = `\n│ DND: ${remaining} menit tersisa`;
     }
 
     const memMB = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1);
-    const aiModel = runtimeOverrides.model || config.ai.model || 'default';
-    const geminiModel = config.ai.geminiModel || 'default';
-    const replyStyle = runtimeOverrides.replyStyle || config.ai.replyStyle || 'santai';
     const schedule = config.awayMode.schedule;
     const scheduleStr = schedule.enabled 
       ? `${schedule.sleepStart} - ${schedule.sleepEnd} ${schedule.timezone}` 
       : 'Nonaktif';
-
-    const modelTag = runtimeOverrides.model ? ' _(live)_' : '';
-    const styleTag = runtimeOverrides.replyStyle ? ' _(live)_' : '';
 
     await sock.sendMessage(msg.from, { 
       text: `📊 *Status AutoWA Bot*\n\n` +
@@ -214,15 +208,9 @@ _Commands hanya untuk owner._`;
         `│ Owner: ${ownerName}\n` +
         `│ Inbox: ${inbox.length} pesan\n` +
         `│ Memory: ${memMB} MB\n` +
-        `│ Uptime: ${formatUptime(process.uptime())}\n\n` +
-        `🤖 *AI Config*\n\n` +
-        `│ Groq: ${aiModel}${modelTag}\n` +
-        `│ Gemini: ${geminiModel}\n` +
-        `│ Style: ${replyStyle}${styleTag}\n` +
-        `│ Max Tokens: ${config.ai.maxTokens || 500}\n\n` +
-        `⏰ *Schedule*\n\n` +
-        `│ Away otomatis: ${scheduleStr}\n\n` +
-        `_Ketik *!help* untuk daftar command._`
+        `│ Uptime: ${formatUptime(process.uptime())}\n` +
+        `│ Schedule: ${scheduleStr}\n\n` +
+        `_Ketik !style, !model, atau !help_`
     });
     return true;
   }
