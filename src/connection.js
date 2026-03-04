@@ -135,8 +135,11 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
 
       // PENTING: Abaikan pesan dari diri sendiri...
       // KECUALI jika itu command (dimulai dengan !)
-      // Ini mencegah infinite loop tapi tetap allow owner kirim !status, !on, dll
       if (msg.key.fromMe && !text.startsWith('!')) continue;
+
+      // Abaikan pesan dari Channel/Newsletter/Saluran (bukan group/private)
+      const jid = msg.key.remoteJid || '';
+      if (jid.endsWith('@newsletter') || jid.endsWith('@lid')) continue;
 
       // Extract data pesan yang bersih
       const messageData = {
