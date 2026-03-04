@@ -454,7 +454,7 @@ function cliConnected(name) {
   console.log(`${C.g}  │                                         │${C.x}`);
   console.log(`${C.g}  │   ${C.b}[ONLINE]${C.x}${C.g}  WhatsApp Connected        │${C.x}`);
   console.log(`${C.g}  │   ${C.d}user:${C.x}${C.g}    ${name.padEnd(26)}│${C.x}`);
-  console.log(`${C.g}  │   ${C.d}status:${C.x}${C.g}  Bot aktif & siap menerima  │${C.x}`);
+  console.log(`${C.g}  │   ${C.d}status:${C.x}${C.g}  Bot active & ready            │${C.x}`);
   console.log(`${C.g}  │                                         │${C.x}`);
   console.log(`${C.g}  └─────────────────────────────────────────┘${C.x}`);
   console.log('');
@@ -490,38 +490,38 @@ async function start() {
       console.log(`${C.g}  ${aiInfo.join(' + ')} configured${C.x}`);
       console.log('');
     } else {
-      console.log(`${C.y}  [!] Tidak ada API key AI${C.x}`);
+      console.log(`${C.y}  [!] No AI API keys configured${C.x}`);
       console.log('');
     }
 
     // Start web server
     const loader1 = startLoader('Starting web server...');
     await new Promise(resolve => app.listen(PORT, resolve));
-    loader1.stop(`Web server aktif di port ${PORT}`);
+    loader1.stop(`Web server running on port ${PORT}`);
 
     // Connect to WhatsApp
     const loader2 = startLoader('Connecting to WhatsApp...');
     const sock = await connectToWhatsApp(handleMessage, (qr) => {
-      loader2.stop('QR Code tersedia');
+      loader2.stop('QR Code ready');
       currentQR = qr;
       qrGeneratedAt = Date.now();
-      logger.info('Scan QR dari browser atau terminal');
+      logger.info('Scan QR from browser or terminal');
     }, (name) => {
-      loader2.stop('WhatsApp terhubung');
+      loader2.stop('WhatsApp connected');
       isConnected = true;
       currentQR = null;
       qrGeneratedAt = null;
       cliConnected(name);
-      logger.info('Bot aktif -- semua pesan akan diproses otomatis');
+      logger.info('Bot active -- all messages will be processed automatically');
     });
   } catch (err) {
-    logger.error('Gagal start bot', err);
+    logger.error('Failed to start bot', err);
   }
 }
 
 start();
 
-// ─── Keep-alive: ping diri sendiri agar tidak sleep ───
+// ─── Keep-alive: ping self to prevent sleep ───
 if (config.keepAlive?.enabled !== false) {
   const keepAliveMs = (config.keepAlive?.intervalMinutes || 4) * 60 * 1000;
   setInterval(() => {

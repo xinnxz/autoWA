@@ -1,19 +1,19 @@
 // ============================================
 // src/connection.js — Baileys WhatsApp Connection
 // ============================================
-// Penjelasan:
-// File ini menghubungkan bot ke WhatsApp pribadi kamu.
+// How it works:
+// This file connects the bot to your personal WhatsApp.
 //
-// Cara kerja Baileys:
-// 1. Pertama kali → muncul QR code di terminal
-// 2. Scan QR code pakai WA di HP (Settings → Linked Devices)
-// 3. Setelah connect, session disimpan di folder 'auth_info'
-// 4. Restart berikutnya TIDAK perlu scan QR lagi (auto-reconnect)
+// Baileys flow:
+// 1. First run → QR code appears in terminal
+// 2. Scan QR code with WA on phone (Settings → Linked Devices)
+// 3. After connecting, session is saved to 'auth_info' folder
+// 4. Next restart does NOT require QR scan (auto-reconnect)
 //
-// Bedanya dengan Cloud API:
-// - Cloud API = lewat server Meta (HTTP request)
-// - Baileys = langsung konek ke WA lewat WebSocket
-//   (seperti WA Web, tapi dikendalikan kode kita)
+// Difference with Cloud API:
+// - Cloud API = through Meta's servers (HTTP request)
+// - Baileys = direct WebSocket connection to WA
+//   (like WA Web, but controlled by our code)
 // ============================================
 
 const { default: makeWASocket, 
@@ -25,29 +25,29 @@ const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 const logger = require('./utils/logger');
 
-// Folder untuk simpan session auth (lokal)
+// Folder for storing auth session (local)
 const AUTH_FOLDER = process.env.AUTH_DIR || './auth_info';
 
 /**
- * Buat koneksi WhatsApp menggunakan Baileys
+ * Create WhatsApp connection using Baileys
  * 
  * Auth storage:
- * - Jika MONGODB_URI ada → simpan auth ke MongoDB Atlas (untuk cloud/Koyeb)
- * - Jika tidak → simpan auth ke folder lokal (untuk development)
+ * - If MONGODB_URI exists → store auth in MongoDB Atlas (for cloud/Koyeb)
+ * - Otherwise → store auth in local folder (for development)
  */
 async function connectToWhatsApp(onMessage, onQR, onConnected) {
   let state, saveCreds;
 
   if (process.env.MONGODB_URI) {
     try {
-      // Cloud mode: simpan auth ke MongoDB Atlas
+      // Cloud mode: store auth in MongoDB Atlas
       const { useMongoDBAuthState } = require('./utils/mongoAuth');
       const result = await useMongoDBAuthState(process.env.MONGODB_URI);
       state = result.state;
       saveCreds = result.saveCreds;
       logger.info('[Auth] Mode: MongoDB Atlas (cloud-persistent)');
     } catch (err) {
-      logger.warn(`[Auth] MongoDB gagal: ${err.message} — fallback ke filesystem`);
+      logger.warn(`[Auth] MongoDB failed: ${err.message} — falling back to filesystem`);
       const result = await useMultiFileAuthState(AUTH_FOLDER);
       state = result.state;
       saveCreds = result.saveCreds;
@@ -100,7 +100,7 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
       if (sock._qrTimer) { clearInterval(sock._qrTimer); sock._qrTimer = null; }
 
       console.log('');
-      console.log('Scan QR code ini dengan WhatsApp kamu:');
+      console.log('Scan this QR code with your WhatsApp:');
       console.log('   (Settings > Linked Devices > Link a Device)');
       console.log('');
       qrcode.generate(qr, { small: true });
@@ -120,7 +120,7 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
         process.stdout.write(`   QR expires in: ${String(sec).padStart(2)} s  [${bar}]\r`);
       }, 1000);
 
-      // Kirim QR ke web page juga
+      // Send QR to web page too
       if (onQR) onQR(qr);
     }
 
@@ -150,13 +150,13 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
     try { await saveCreds(); } finally { console.log = origLog; }
   });
 
-  // ─── 6. Handle pesan masuk ───
+  // ─── 6. Handle incoming messages ───
   sock.ev.on('messages.upsert', async (m) => {
-    // m.type bisa 'notify' (pesan baru) atau 'append' (history)
+    // m.type can be 'notify' (new message) or 'append' (history)
     if (m.type !== 'notify') return;
 
     for (const msg of m.messages) {
-      // Abaikan jika tidak ada pesan (status update, reactions, dll)
+      // Skip if no messages (status updates, reactions, etc.)
       if (!msg.message) continue;
 
       // Extract text dulu (perlu untuk cek command)
@@ -166,15 +166,15 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
                    msg.message?.videoMessage?.caption ||
                    '';
 
-      // PENTING: Abaikan pesan dari diri sendiri...
+      // IMPORTANT: Skip messages from self...
       // KECUALI jika itu command (dimulai dengan !)
       if (msg.key.fromMe && !text.startsWith('!')) continue;
 
-      // Abaikan pesan dari Channel/Newsletter/Saluran (bukan group/private)
+      // Skip messages from Channel/Newsletter (not group/private)
       const jid = msg.key.remoteJid || '';
       if (jid.endsWith('@newsletter') || jid.endsWith('@lid')) continue;
 
-      // Extract data pesan yang bersih
+      // Extract clean message data
       const messageData = {
         from: msg.key.remoteJid,
         name: msg.pushName || 'Unknown',
