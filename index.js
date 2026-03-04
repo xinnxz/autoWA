@@ -225,6 +225,25 @@ app.post('/api/config', authDashboard, (req, res) => {
   }
 
   if (changes.length) logger.info(`[Dashboard] Config: ${changes.join(', ')}`);
+
+  // Persist config overrides so they survive restarts
+  if (changes.length) {
+    const co = store._getConfigOverrides();
+    if (name !== undefined && name.trim()) co.ownerName = name.trim();
+    if (config.safety.replyDelay) co.replyDelay = config.safety.replyDelay;
+    if (config.safety.maxRepliesPerContact) co.maxReplies = config.safety.maxRepliesPerContact;
+    if (config.safety.cooldownPerContact) co.cooldown = config.safety.cooldownPerContact;
+    if (config.ai.maxTokens) co.maxTokens = config.ai.maxTokens;
+    co.contextual = config.ai.contextualMode;
+    co.historyEnabled = config.ai.chatHistory?.enabled || false;
+    co.ignoreGroups = config.safety.ignoreGroups;
+    co.timezone = config.timezone;
+    co.scheduleEnabled = config.awayMode.schedule?.enabled || false;
+    co.scheduleStart = config.awayMode.schedule?.sleepStart || '';
+    co.scheduleEnd = config.awayMode.schedule?.sleepEnd || '';
+    store.save();
+  }
+
   res.json({ ok: true, changes });
 });
 

@@ -36,6 +36,7 @@ let _state = {
   chatHistory: null,    // Map reference
   runtimeOverrides: null,
   aiMetrics: null,
+  configOverrides: null, // Config changes from dashboard
 };
 
 let _saveTimer = null;
@@ -87,6 +88,11 @@ function serialize() {
       providerUsage: _state.aiMetrics.providerUsage || {},
       avgLatency: _state.aiMetrics.avgLatency || 0,
     };
+  }
+
+  // Config overrides from dashboard
+  if (_state.configOverrides) {
+    data.configOverrides = Object.assign({}, _state.configOverrides);
   }
 
   return data;
@@ -188,6 +194,28 @@ function load() {
       logger.info(`[Store] Restored AI metrics (${_state.aiMetrics.totalCalls} total calls)`);
     }
 
+    // Restore config overrides (reapply to config object)
+    if (data.configOverrides) {
+      const c = data.configOverrides;
+      const config = require('../../config.js');
+      const applied = [];
+
+      if (c.ownerName) { process.env.OWNER_NAME = c.ownerName; applied.push('name'); }
+      if (c.timezone) { config.timezone = c.timezone; applied.push('tz'); }
+      if (c.replyDelay) { config.safety.replyDelay = c.replyDelay; applied.push('delay'); }
+      if (c.maxTokens) { config.ai.maxTokens = c.maxTokens; applied.push('tokens'); }
+      if (c.maxReplies) { config.safety.maxRepliesPerContact = c.maxReplies; applied.push('maxReplies'); }
+      if (c.cooldown) { config.safety.cooldownPerContact = c.cooldown; applied.push('cooldown'); }
+      if (c.contextual !== undefined) { config.ai.contextualMode = c.contextual; applied.push('ctx'); }
+      if (c.historyEnabled !== undefined && config.ai.chatHistory) { config.ai.chatHistory.enabled = c.historyEnabled; applied.push('history'); }
+      if (c.ignoreGroups !== undefined) { config.safety.ignoreGroups = c.ignoreGroups; applied.push('ignoreGrp'); }
+      if (c.scheduleEnabled !== undefined && config.awayMode.schedule) { config.awayMode.schedule.enabled = c.scheduleEnabled; applied.push('sched'); }
+      if (c.scheduleStart && config.awayMode.schedule) { config.awayMode.schedule.sleepStart = c.scheduleStart; }
+      if (c.scheduleEnd && config.awayMode.schedule) { config.awayMode.schedule.sleepEnd = c.scheduleEnd; }
+
+      if (applied.length) logger.info(`[Store] Restored config: ${applied.join(', ')}`);
+    }
+
     logger.info(`[Store] State loaded from ${data._savedAt || 'unknown time'}`);
   } catch (err) {
     logger.warn(`[Store] Load failed: ${err.message} — starting fresh`);
@@ -221,4 +249,10 @@ function setupShutdownHook() {
 
 setupShutdownHook();
 
-module.exports = { register, load, save, saveNow };
+// ─── Config overrides helper ───
+function _getConfigOverrides() {
+  if (!_state.configOverrides) _state.configOverrides = {};
+  return _state.configOverrides;
+}
+
+module.exports = { register, load, save, saveNow, _getConfigOverrides };
