@@ -124,6 +124,14 @@ select.ctrl-select:hover{border-color:var(--border-h)}
 
 .toast{position:fixed;bottom:16px;right:16px;background:var(--surface);border:1px solid var(--border);padding:8px 14px;border-radius:6px;font-size:12px;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;z-index:100}
 .toast.show{opacity:1;transform:translateY(0)}
+.cfg-input{background:var(--surface);border:1px solid var(--border);color:var(--t1);padding:4px 8px;border-radius:4px;font-size:12px;font-family:JetBrains Mono,monospace;width:110px;outline:none;transition:border-color .15s}
+.cfg-input:focus{border-color:var(--accent)}
+.toggle{position:relative;display:inline-block;width:32px;height:18px}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:18px;transition:.2s}
+.slider:before{content:'';position:absolute;height:12px;width:12px;left:3px;bottom:3px;background:var(--t3);border-radius:50%;transition:.2s}
+.toggle input:checked+.slider{background:var(--green)}
+.toggle input:checked+.slider:before{transform:translateX(14px);background:#fff}
 
 @media(max-width:768px){
   .sidebar{display:none}.main{margin-left:0}
@@ -153,6 +161,7 @@ select.ctrl-select:hover{border-color:var(--border-h)}
     <span class="nm" id="el-owner">--</span>
     <button class="theme-btn" id="theme-toggle" title="Toggle theme"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
   </div>
+  <div style="padding:0 16px 12px;font-family:JetBrains Mono,monospace;font-size:10px;color:var(--t3);opacity:.6" id="el-ver">v2.0.0</div>
 </aside>
 
 <div class="main">
@@ -220,8 +229,18 @@ select.ctrl-select:hover{border-color:var(--border-h)}
 
   <!-- Config -->
   <div class="content page" id="p-config" style="display:none">
-    <div class="ctrl-bar"><h2 style="font-size:16px;font-weight:600">Configuration</h2></div>
-    <div class="sec"><div class="sec-hd"><h3>Settings</h3></div><div class="cfg-grid" id="el-cfg"></div></div>
+    <div class="ctrl-bar"><h2 style="font-size:16px;font-weight:600">Configuration</h2><div style="flex:1"></div><button class="btn" onclick="saveConfig()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button></div>
+    <div class="sec"><div class="sec-hd"><h3>Editable</h3></div>
+      <div class="cfg-grid" id="el-cfg-edit">
+        <div class="cfg-item"><span class="k">Owner Name</span><input class="cfg-input" id="cfg-name" placeholder="Name"></div>
+        <div class="cfg-item"><span class="k">Reply Delay</span><input class="cfg-input" id="cfg-delay" type="number" min="500" max="10000" step="500" placeholder="ms"></div>
+        <div class="cfg-item"><span class="k">Max Replies</span><input class="cfg-input" id="cfg-max" type="number" min="1" max="20" placeholder="per contact"></div>
+        <div class="cfg-item"><span class="k">Cooldown</span><input class="cfg-input" id="cfg-cool" type="number" min="30" max="3600" step="30" placeholder="seconds"></div>
+        <div class="cfg-item"><span class="k">Contextual AI</span><label class="toggle"><input type="checkbox" id="cfg-ctx"><span class="slider"></span></label></div>
+        <div class="cfg-item"><span class="k">Chat History</span><label class="toggle"><input type="checkbox" id="cfg-hist"><span class="slider"></span></label></div>
+      </div>
+    </div>
+    <div class="sec" style="margin-top:14px"><div class="sec-hd"><h3>Read-Only</h3></div><div class="cfg-grid" id="el-cfg"></div></div>
   </div>
 
   <!-- Groups -->
@@ -346,8 +365,17 @@ function render(){
   if(!contacts.length){cl.innerHTML='<div class="empty">No contacts yet</div>'}
   else{cl.innerHTML=contacts.map(c=>`<div class="row"><div class="ic-box green">${SVG.user}</div><div class="info"><div class="p">${esc(c.name)}</div><div class="s">${esc(c.lastMsg)}</div></div><div class="meta">${c.msgCount}x \u00b7 ${ago(c.lastTime)}</div></div>`).join('')}
 
-  // Config
-  const cfgs=[['Language',d.language],['Timezone',d.timezone],['Away',d.awayMode?'ON':'OFF',d.awayMode],['Contextual AI',d.contextualMode?'ON':'OFF',d.contextualMode],['Delay',d.replyDelay+'ms'],['Max Reply',d.maxReplies+'x'],['Cooldown',d.cooldown+'s'],['Model',shortM(d.model)],['Style',d.style],['History',d.historyEnabled?'ON':'OFF',d.historyEnabled]];
+  // Config — editable fields
+  document.getElementById('cfg-name').value=d.owner||'';
+  document.getElementById('cfg-delay').value=d.replyDelay||2000;
+  document.getElementById('cfg-max').value=d.maxReplies||3;
+  document.getElementById('cfg-cool').value=d.cooldown||300;
+  document.getElementById('cfg-ctx').checked=!!d.contextualMode;
+  document.getElementById('cfg-hist').checked=!!d.historyEnabled;
+  if(d.version)document.getElementById('el-ver').textContent='v'+d.version;
+
+  // Config — read-only
+  const cfgs=[['Language',d.language],['Timezone',d.timezone],['Away',d.awayMode?'ON':'OFF',d.awayMode],['Model',shortM(d.model)],['Style',d.style],['Max Tokens',d.maxTokens||'—'],['Schedule',d.scheduleEnabled?d.scheduleStart+' – '+d.scheduleEnd:'OFF',d.scheduleEnabled],['History Max',d.historyMax+' msgs'],['History TTL',d.historyAge+'m']];
   document.getElementById('el-cfg').innerHTML=cfgs.map(([k,v,b])=>`<div class="cfg-item"><span class="k">${k}</span><span class="v ${b===true?'on':b===false?'off':''}">${v}</span></div>`).join('');
 
   // Groups
@@ -406,6 +434,19 @@ async function clearInbox(){if(!confirm('Clear inbox?'))return;await api('/api/i
 async function clearHistory(){if(!confirm('Clear AI history?'))return;await api('/api/history/clear');toast('History cleared');refreshData()}
 async function clearLogs(){if(!confirm('Clear logs?'))return;await api('/api/logs/clear');logCount=0;document.getElementById('el-logs').innerHTML='';document.getElementById('b-logs').textContent='0';document.getElementById('el-log-cnt').textContent='0';toast('Logs cleared')}
 async function clearContacts(){if(!confirm('Clear contacts?'))return;await api('/api/contacts/clear');toast('Contacts cleared');refreshData()}
+async function saveConfig(){
+  const body={
+    name:document.getElementById('cfg-name').value,
+    delay:document.getElementById('cfg-delay').value,
+    maxReplies:document.getElementById('cfg-max').value,
+    cooldown:document.getElementById('cfg-cool').value,
+    contextual:document.getElementById('cfg-ctx').checked,
+    history:document.getElementById('cfg-hist').checked,
+  };
+  const r=await post('/api/config',body);
+  toast('Config saved'+(r.changes?': '+r.changes.join(', '):''));
+  refreshData();
+}
 
 // SSE Logs
 function initSSE(){

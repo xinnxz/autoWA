@@ -53,7 +53,6 @@ app.use(express.json());
 
 // ─── Dashboard page ───
 const path = require('path');
-app.use('/docs', express.static(path.join(__dirname, 'docs')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.get('/dashboard', authDashboard, (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'web', 'dashboard.html'));
@@ -97,6 +96,7 @@ app.get('/api/stats', authDashboard, (req, res) => {
     replyDelay: config.safety.replyDelay,
     maxReplies: config.safety.maxRepliesPerContact,
     cooldown: config.safety.cooldownPerContact,
+    maxTokens: config.ai.maxTokens || 500,
     scheduleEnabled: config.awayMode.schedule?.enabled || false,
     scheduleStart: config.awayMode.schedule?.sleepStart || '',
     scheduleEnd: config.awayMode.schedule?.sleepEnd || '',
@@ -112,6 +112,7 @@ app.get('/api/stats', authDashboard, (req, res) => {
     contacts: getContacts(50),
     aiMetrics: metrics,
     qr: currentQR ? true : false,
+    version: '2.0.0',
     stylePresets: (() => { try { return require('./src/utils/locale').getStylePresets(); } catch(e) { return ['santai','formal','gaul','campur']; } })(),
     availableLanguages: ['id','en','es','ar','pt','ja','hi','ko','fr','ms'],
   });
@@ -162,6 +163,40 @@ app.post('/api/language', authDashboard, (req, res) => {
   try { delete require.cache[require.resolve('./src/utils/locale')]; } catch(e) {}
   logger.info(`[Dashboard] Language \u2192 ${lang}`);
   res.json({ ok: true, language: lang });
+});
+
+// ─── API: Control — Update config settings ───
+app.post('/api/config', authDashboard, (req, res) => {
+  const changes = [];
+  const { name, delay, cooldown, maxReplies, contextual, history } = req.body;
+
+  if (name !== undefined && name.trim()) {
+    process.env.OWNER_NAME = name.trim();
+    changes.push(`Name → ${name.trim()}`);
+  }
+  if (delay !== undefined) {
+    const v = parseInt(delay);
+    if (v >= 500 && v <= 10000) { config.safety.replyDelay = v; changes.push(`Delay → ${v}ms`); }
+  }
+  if (cooldown !== undefined) {
+    const v = parseInt(cooldown);
+    if (v >= 30 && v <= 3600) { config.safety.cooldownPerContact = v; changes.push(`Cooldown → ${v}s`); }
+  }
+  if (maxReplies !== undefined) {
+    const v = parseInt(maxReplies);
+    if (v >= 1 && v <= 20) { config.safety.maxRepliesPerContact = v; changes.push(`MaxReplies → ${v}`); }
+  }
+  if (contextual !== undefined) {
+    config.ai.contextualMode = !!contextual;
+    changes.push(`Contextual → ${contextual ? 'ON' : 'OFF'}`);
+  }
+  if (history !== undefined) {
+    if (config.ai.chatHistory) config.ai.chatHistory.enabled = !!history;
+    changes.push(`History → ${history ? 'ON' : 'OFF'}`);
+  }
+
+  if (changes.length) logger.info(`[Dashboard] Config: ${changes.join(', ')}`);
+  res.json({ ok: true, changes });
 });
 
 // ─── API: Clear inbox ───
