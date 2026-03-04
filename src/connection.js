@@ -133,26 +133,32 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
   // ─── 6. Handle incoming messages ───
   sock.ev.on('messages.upsert', async (m) => {
     // m.type can be 'notify' (new message) or 'append' (history)
+    logger.info(`[DEBUG] messages.upsert: type=${m.type} count=${m.messages?.length}`);
     if (m.type !== 'notify') return;
 
     for (const msg of m.messages) {
       // Skip if no messages (status updates, reactions, etc.)
-      if (!msg.message) continue;
+      if (!msg.message) {
+        logger.info(`[DEBUG] Skipped: no msg.message, keys=${JSON.stringify(Object.keys(msg))}`);
+        continue;
+      }
 
-      // Extract text dulu (perlu untuk cek command)
+      // Extract text (needed for command check)
       const text = msg.message?.conversation ||
                    msg.message?.extendedTextMessage?.text ||
                    msg.message?.imageMessage?.caption ||
                    msg.message?.videoMessage?.caption ||
                    '';
 
+      logger.info(`[DEBUG] Message: from=${msg.key.remoteJid} fromMe=${msg.key.fromMe} text="${text.substring(0,50)}" msgType=${Object.keys(msg.message).join(',')}`);
+
       // IMPORTANT: Skip messages from self...
-      // KECUALI jika itu command (dimulai dengan !)
+      // EXCEPT if it's a command (starts with !)
       if (msg.key.fromMe && !text.startsWith('!')) continue;
 
-      // Skip messages from Channel/Newsletter (not group/private)
+      // Skip messages from Channel/Newsletter only
       const jid = msg.key.remoteJid || '';
-      if (jid.endsWith('@newsletter') || jid.endsWith('@lid')) continue;
+      if (jid.endsWith('@newsletter')) continue;
 
       // Extract clean message data
       const messageData = {
@@ -160,19 +166,20 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
         name: msg.pushName || 'Unknown',
         messageId: msg.key.id,
         isGroup: msg.key.remoteJid?.endsWith('@g.us'),
-        // Pakai text yang sudah di-extract di atas
         text,
         timestamp: msg.messageTimestamp,
         raw: msg,
       };
 
-      // Forward ke handler jika ada callback
+      // Forward to handler if callback exists
       if (onMessage && messageData.text) {
         try {
           await onMessage(sock, messageData);
         } catch (err) {
-          logger.error('Error di message handler', err);
+          logger.error('Error in message handler', err);
         }
+      } else {
+        logger.info(`[DEBUG] Skipped handler: onMessage=${!!onMessage} text="${text}"`);
       }
     }
   });
