@@ -322,146 +322,79 @@ app.get('/api/qr', authDashboard, async (req, res) => {
   res.json({ connected: false, qr: qrImage, remaining: Math.max(60 - elapsed, 0) });
 });
 
-// QR code page (untuk scan dari browser)
+// QR code page — WhatsApp-style light theme
 app.get('/', async (req, res) => {
+  const head = '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">'
+    + '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f0f2f5;display:flex;align-items:center;justify-content:center;min-height:100vh}.ctn{background:#fff;border-radius:12px;padding:48px 52px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.04);max-width:460px;width:92%}h1{font-size:20px;font-weight:600;color:#111b21;margin-bottom:8px}.sub{color:#667781;font-size:14px;line-height:1.5;margin-bottom:24px}</style>';
+
+  const logo = '<div style="width:48px;height:48px;margin:0 auto 24px"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#25D366"/><path d="M35 13a14.5 14.5 0 0 0-23.4 17L10 35l5.2-1.4A14.5 14.5 0 0 0 35 13zm-10.8 22.3a12 12 0 0 1-6.1-1.7l-.4-.3-4.4 1.2 1.2-4.3-.3-.5a12 12 0 1 1 10 5.6z" fill="#fff"/><path d="M30.2 27.5c-.6-.3-3.4-1.7-3.9-1.9-.5-.2-.9-.3-1.3.3s-1.5 1.9-1.8 2.3c-.3.4-.7.4-1.3.1s-2.5-1-4.8-3c-1.8-1.6-3-3.5-3.3-4.1s0-.9.3-1.2l.8-1c.3-.3.4-.5.5-.9.2-.4 0-.7-.1-1l-1.4-3.4c-.4-.9-.8-.8-1.1-.8h-1c-.4 0-.9.1-1.4.7-.5.5-1.8 1.7-1.8 4.2s1.8 4.9 2.1 5.2c.3.4 3.6 5.5 8.6 7.7 1.2.5 2.1.8 2.9 1.1 1.2.4 2.3.3 3.1.2 1-.2 3-1.2 3.4-2.4.4-1.2.4-2.2.3-2.4-.2-.2-.5-.3-1.1-.6z" fill="#fff"/></svg></div>';
+
+  // Connected state
   if (isConnected) {
-    res.send(`
-      <html>
-      <head><title>AutoWA — Connected</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a0a; color: #fff; 
-               display: flex; align-items: center; justify-content: center; height: 100vh; }
-        .card { background: #111827; padding: 48px; border-radius: 20px; text-align: center; 
-                box-shadow: 0 0 40px rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.2); }
-        .check { width: 64px; height: 64px; border-radius: 50%; background: rgba(16,185,129,0.15);
-                 display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
-                 animation: pulse-green 2s ease infinite; }
-        .check svg { width: 32px; height: 32px; }
-        @keyframes pulse-green { 0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); } 50% { box-shadow: 0 0 0 16px rgba(16,185,129,0); } }
-        h2 { color: #10b981; font-size: 22px; margin-bottom: 8px; }
-        p { color: #6b7280; font-size: 14px; }
-        .uptime { color: #374151; font-size: 12px; margin-top: 16px; }
-      </style></head>
-      <body>
-        <div class="card">
-          <div class="check">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          </div>
-          <h2>Connected</h2>
-          <p>WhatsApp is linked and the bot is running.</p>
-          <p class="uptime">Uptime: ${Math.floor(process.uptime())}s</p>
-        </div>
-      </body></html>
-    `);
-    return;
+    return res.send('<html><head><title>AutoWA — Connected</title>' + head
+      + '<style>.icon{width:72px;height:72px;border-radius:50%;background:#e8faf0;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;animation:pop .5s ease}.icon svg{width:36px;height:36px}@keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.1)}100%{transform:scale(1)}}h1{color:#00a884}.meta{color:#8696a0;font-size:13px;margin-top:20px;padding-top:16px;border-top:1px solid #e9edef}</style></head>'
+      + '<body><div class="ctn">' + logo
+      + '<div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#00a884" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
+      + '<h1>Connected</h1>'
+      + '<p class="sub">Your WhatsApp is linked successfully.<br>AutoWA bot is active and processing messages.</p>'
+      + '<p class="meta">Uptime: ' + Math.floor(process.uptime()) + 's</p>'
+      + '</div></body></html>');
   }
 
+  // Waiting for QR
   if (!currentQR) {
-    res.send(`
-      <html>
-      <head><title>AutoWA — Waiting</title>
-      <meta http-equiv="refresh" content="3">
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a0a; color: #fff; 
-               display: flex; align-items: center; justify-content: center; height: 100vh; }
-        .card { background: #111827; padding: 48px 56px; border-radius: 20px; text-align: center; 
-                box-shadow: 0 0 40px rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.15); }
-        .loader { width: 48px; height: 48px; margin: 0 auto 24px; position: relative; }
-        .loader::before, .loader::after {
-          content: ''; position: absolute; border-radius: 50%;
-          inset: 0; border: 3px solid transparent;
-        }
-        .loader::before { border-top-color: #6366f1; animation: spin 1s linear infinite; }
-        .loader::after { border-top-color: #818cf8; inset: 6px; animation: spin 0.6s linear infinite reverse; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        h2 { color: #a5b4fc; font-size: 20px; margin-bottom: 8px; }
-        p { color: #6b7280; font-size: 14px; }
-        .dots::after { content: ''; animation: dots 1.5s steps(4) infinite; }
-        @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
-      </style></head>
-      <body>
-        <div class="card">
-          <div class="loader"></div>
-          <h2>Waiting for QR Code<span class="dots"></span></h2>
-          <p>This page will refresh automatically.</p>
-        </div>
-      </body></html>
-    `);
-    return;
+    return res.send('<html><head><title>AutoWA — Connecting</title>' + head
+      + '<meta http-equiv="refresh" content="3">'
+      + '<style>.spin{width:44px;height:44px;margin:0 auto 24px;border:3px solid #e9edef;border-top-color:#00a884;border-radius:50%;animation:r .8s linear infinite}@keyframes r{to{transform:rotate(360deg)}}</style></head>'
+      + '<body><div class="ctn">' + logo
+      + '<div class="spin"></div>'
+      + '<h1>Generating QR Code</h1>'
+      + '<p class="sub">Please wait, this page refreshes automatically.</p>'
+      + '</div></body></html>');
   }
 
-  // Hitung sisa waktu QR (expire ~60 detik dari pembuatan)
+  // QR Code display
   const elapsed = qrGeneratedAt ? Math.floor((Date.now() - qrGeneratedAt) / 1000) : 0;
-  const remaining = Math.max(60 - elapsed, 5); // minimal 5 detik
+  const remaining = Math.max(60 - elapsed, 5);
+  const qrImage = await QRCode.toDataURL(currentQR, { width: 264, margin: 2 });
 
-  // Generate QR sebagai gambar
-  const qrImage = await QRCode.toDataURL(currentQR, { width: 300, margin: 2 });
-  
-  res.send(`
-    <html>
-    <head><title>AutoWA — Scan QR</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a0a; color: #fff; 
-             display: flex; align-items: center; justify-content: center; height: 100vh; }
-      .card { background: #111827; padding: 40px; border-radius: 20px; text-align: center; 
-              box-shadow: 0 0 40px rgba(79,195,247,0.1); border: 1px solid rgba(79,195,247,0.15); max-width: 420px; }
-      img { border-radius: 12px; margin: 16px 0; }
-      h2 { color: #4fc3f7; margin-bottom: 8px; font-size: 22px; }
-      p { color: #6b7280; font-size: 14px; }
-      .steps { color: #9ca3af; font-size: 13px; margin-bottom: 4px; }
-      .timer { font-size: 36px; font-weight: 700; color: #4fc3f7; margin: 8px 0; font-variant-numeric: tabular-nums; }
-      .timer.warning { color: #fbbf24; }
-      .timer.danger { color: #ef4444; }
-      .bar-bg { width: 100%; height: 4px; background: #1f2937; border-radius: 2px; margin: 12px 0; overflow: hidden; }
-      .bar-fill { height: 100%; background: #4fc3f7; border-radius: 2px; transition: width 1s linear, background 0.5s; }
-      .bar-fill.warning { background: #fbbf24; }
-      .bar-fill.danger { background: #ef4444; }
-      .label { color: #4b5563; font-size: 12px; }
-    </style></head>
-    <body>
-      <div class="card">
-        <h2>Scan QR Code</h2>
-        <p class="steps">WhatsApp > Settings > Linked Devices > Link a Device</p>
-        <img src="${qrImage}" alt="QR Code" />
-        <div class="timer" id="timer">${remaining}</div>
-        <div class="bar-bg"><div class="bar-fill" id="bar" style="width:${(remaining/60*100).toFixed(1)}%"></div></div>
-        <p class="label" id="label">seconds remaining</p>
-      </div>
-      <script>
-        let sec = ${remaining};
-        const timer = document.getElementById('timer');
-        const bar = document.getElementById('bar');
-        const label = document.getElementById('label');
-        setInterval(() => {
-          sec--;
-          if (sec <= 0) {
-            timer.textContent = 'Expired';
-            timer.className = 'timer danger';
-            bar.style.width = '0%';
-            label.textContent = 'Refreshing...';
-            setTimeout(() => location.reload(), 2000);
-            return;
-          }
-          timer.textContent = sec;
-          bar.style.width = (sec / 60 * 100) + '%';
-          if (sec <= 10) {
-            timer.className = 'timer danger';
-            bar.className = 'bar-fill danger';
-          } else if (sec <= 25) {
-            timer.className = 'timer warning';
-            bar.className = 'bar-fill warning';
-          }
-        }, 1000);
-      </script>
-    </body></html>
-  `);
+  const stepsCSS = '<style>'
+    + '.steps{text-align:left;margin-bottom:28px}'
+    + '.st{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}'
+    + '.sn{width:24px;height:24px;border-radius:50%;background:#e8faf0;color:#00a884;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}'
+    + '.sx{color:#3b4a54;font-size:14px;line-height:1.5}'
+    + '.sx b{color:#111b21;font-weight:600}'
+    + '.qf{border:1px solid #e9edef;border-radius:8px;padding:16px;display:inline-block;margin-bottom:20px}'
+    + '.qf img{display:block;border-radius:4px}'
+    + '.tm{font-size:28px;font-weight:700;color:#00a884;font-variant-numeric:tabular-nums}'
+    + '.tm.w{color:#f0b429}.tm.d{color:#ea4335}'
+    + '.bb{width:100%;height:3px;background:#e9edef;border-radius:2px;margin:10px 0;overflow:hidden}'
+    + '.bf{height:100%;background:#00a884;border-radius:2px;transition:width 1s linear,background .5s}'
+    + '.bf.w{background:#f0b429}.bf.d{background:#ea4335}'
+    + '.lb{color:#8696a0;font-size:12px}'
+    + '</style>';
+
+  const timerJS = '<script>let s=' + remaining + ';var t=document.getElementById("t"),b=document.getElementById("b"),l=document.getElementById("l");setInterval(function(){s--;if(s<=0){t.textContent="Expired";t.className="tm d";b.style.width="0%";l.textContent="Refreshing...";setTimeout(function(){location.reload()},2e3);return}t.textContent=s;b.style.width=(s/60*100)+"%";if(s<=10){t.className="tm d";b.className="bf d"}else if(s<=25){t.className="tm w";b.className="bf w"}},1e3)</script>';
+
+  res.send('<html><head><title>AutoWA — Scan QR Code</title>' + head + stepsCSS + '</head>'
+    + '<body><div class="ctn">' + logo
+    + '<h1>Link a Device</h1>'
+    + '<p class="sub">Scan this QR code from your WhatsApp to connect.</p>'
+    + '<div class="steps">'
+    + '<div class="st"><div class="sn">1</div><div class="sx">Open <b>WhatsApp</b> on your phone</div></div>'
+    + '<div class="st"><div class="sn">2</div><div class="sx">Tap <b>Settings</b> then <b>Linked Devices</b></div></div>'
+    + '<div class="st"><div class="sn">3</div><div class="sx">Tap <b>Link a Device</b> and scan this code</div></div>'
+    + '</div>'
+    + '<div class="qf"><img src="' + qrImage + '" alt="QR Code" width="264" height="264"/></div>'
+    + '<div class="tm" id="t">' + remaining + '</div>'
+    + '<div class="bb"><div class="bf" id="b" style="width:' + (remaining/60*100).toFixed(1) + '%"></div></div>'
+    + '<p class="lb" id="l">seconds remaining</p>'
+    + '</div>'
+    + timerJS
+    + '</body></html>');
 });
-
 // ─── CLI Display Helpers ───
 const C = {
   g: '\x1b[32m',    // green
