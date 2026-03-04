@@ -64,6 +64,15 @@ const providerOrder = ['groq', 'gemini'];
 // Value: [{ role: 'user'|'assistant', content: string, time: number }]
 const chatHistory = new Map();
 
+// ─── AI Metrics (latency tracking) ───
+const aiMetrics = {
+  totalCalls: 0,
+  latencyHistory: [],   // last 20 latency values in ms
+  providerUsage: {},    // { groq: 10, gemini: 2 }
+  lastCallTime: null,
+  avgLatency: 0,
+};
+
 // Auto-cleanup history yang expired
 const historyCleanupMs = 10 * 60 * 1000; // Tiap 10 menit
 setInterval(() => {
@@ -417,12 +426,23 @@ async function generateWithRotation(prompt, mode = 'prefix', history = []) {
       try {
         logger.debug(`${p.name} key ${keyIdx + 1}/${p.keys.length}`);
         
+        const startTime = Date.now();
         let result;
         if (providerName === 'groq') {
           result = await callGroq(keyIdx, prompt, mode, history);
         } else {
           result = await callGemini(keyIdx, prompt, mode);
         }
+        const latency = Date.now() - startTime;
+
+        // Track metrics
+        aiMetrics.totalCalls++;
+        aiMetrics.lastCallTime = Date.now();
+        aiMetrics.latencyHistory.push(latency);
+        if (aiMetrics.latencyHistory.length > 20) aiMetrics.latencyHistory.shift();
+        aiMetrics.providerUsage[providerName] = (aiMetrics.providerUsage[providerName] || 0) + 1;
+        aiMetrics.avgLatency = Math.round(aiMetrics.latencyHistory.reduce((a,b)=>a+b,0) / aiMetrics.latencyHistory.length);
+        logger.debug(`AI response: ${latency}ms (${p.name})`);
 
         // Update index untuk round-robin
         p.currentIndex = (keyIdx + 1) % p.keys.length;
@@ -512,4 +532,6 @@ async function handleContextual(sock, msg, opts = {}) {
   }
 }
 
-module.exports = { handle, handleContextual, clearHistory };
+function getAIMetrics() { return { ...aiMetrics }; }
+
+module.exports = { handle, handleContextual, clearHistory, getAIMetrics };

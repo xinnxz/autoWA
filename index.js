@@ -40,7 +40,7 @@ app.get('/health', (req, res) => {
 
 // ─── Dashboard Auth middleware ───
 function authDashboard(req, res, next) {
-  const key = req.query.key || '';
+  const key = req.query.key || req.headers['x-auth-key'] || '';
   const ownerNumber = process.env.OWNER_NUMBER || '';
   if (!ownerNumber || key !== ownerNumber) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -48,15 +48,22 @@ function authDashboard(req, res, next) {
   next();
 }
 
+// JSON body parser
+app.use(express.json());
+
 // ─── Dashboard page ───
 const path = require('path');
 app.get('/dashboard', authDashboard, (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'web', 'dashboard.html'));
 });
 
+// ─── Contact tracker (shared module) ───
+const { getContacts } = require('./src/utils/contacts');
+
 // ─── API: Stats (semua data untuk dashboard) ───
 app.get('/api/stats', authDashboard, (req, res) => {
-  const { botState, runtimeOverrides, groupSettings } = require('./src/features/botControl');
+  const { botState, runtimeOverrides, groupSettings, inbox } = require('./src/features/botControl');
+  const { getAIMetrics } = require('./src/features/aiReply');
   
   // Count API keys
   let groqKeys = 0, geminiKeys = 0;
@@ -67,23 +74,11 @@ app.get('/api/stats', authDashboard, (req, res) => {
   if (!groqKeys && process.env.GROQ_API_KEY) groqKeys = 1;
   if (!geminiKeys && process.env.GEMINI_API_KEY) geminiKeys = 1;
 
-  // Get inbox
-  const { addToInbox } = require('./src/features/botControl');
-  let inbox = [];
-  try { inbox = require('./src/features/botControl').inbox || []; } catch(e) {}
-  
-  // Get group list
   const groups = Object.entries(groupSettings).map(([id, s]) => ({
     id: id.split('@')[0], enabled: s.enabled, style: s.style
   }));
 
-  // History contacts count
-  let historyContacts = 0;
-  try {
-    const aiReply = require('./src/features/aiReply');
-    // chatHistory is internal, estimate from clearHistory
-    historyContacts = '~';
-  } catch(e) {}
+  const metrics = getAIMetrics();
 
   res.json({
     connected: isConnected,
@@ -106,25 +101,90 @@ app.get('/api/stats', authDashboard, (req, res) => {
     historyEnabled: config.ai.chatHistory?.enabled || false,
     historyMax: config.ai.chatHistory?.maxMessages || 6,
     historyAge: config.ai.chatHistory?.maxAge || 30,
-    historyContacts,
     groqKeys,
     geminiKeys,
-    inboxCount: inbox.length,
-    inbox: inbox.slice(-50),
+    inboxCount: (inbox || []).length,
+    inbox: (inbox || []).slice(-50),
     groupCount: groups.filter(g => g.enabled).length,
     groups,
+    contacts: getContacts(50),
+    aiMetrics: metrics,
+    qr: currentQR ? true : false,
   });
+});
+
+// ─── API: Control — Toggle away ───
+app.post('/api/away', authDashboard, (req, res) => {
+  const { botState } = require('./src/features/botControl');
+  const { action } = req.body; // 'on' or 'off'
+  if (action === 'on') {
+    botState.awayMode = true;
+    logger.info('[Dashboard] Away mode ON');
+  } else {
+    botState.awayMode = false;
+    botState.dndUntil = null;
+    logger.info('[Dashboard] Away mode OFF');
+  }
+  res.json({ ok: true, awayMode: botState.awayMode });
+});
+
+// ─── API: Control — Change style ───
+app.post('/api/style', authDashboard, (req, res) => {
+  const { runtimeOverrides } = require('./src/features/botControl');
+  const { style } = req.body;
+  runtimeOverrides.replyStyle = style || null;
+  logger.info(`[Dashboard] Style → ${style || 'default'}`);
+  res.json({ ok: true, style: runtimeOverrides.replyStyle });
+});
+
+// ─── API: Control — Change model ───
+app.post('/api/model', authDashboard, (req, res) => {
+  const { runtimeOverrides } = require('./src/features/botControl');
+  const { model } = req.body;
+  runtimeOverrides.model = model || null;
+  logger.info(`[Dashboard] Model → ${model || 'default'}`);
+  res.json({ ok: true, model: runtimeOverrides.model });
 });
 
 // ─── API: Clear inbox ───
 app.get('/api/inbox/clear', authDashboard, (req, res) => {
-  try {
-    const botControl = require('./src/features/botControl');
-    if (botControl.inbox) botControl.inbox.length = 0;
-    res.json({ ok: true });
-  } catch(e) {
-    res.json({ ok: false, error: e.message });
+  const { inbox } = require('./src/features/botControl');
+  if (inbox) inbox.length = 0;
+  logger.info('[Dashboard] Inbox cleared');
+  res.json({ ok: true });
+});
+
+// ─── API: Clear history ───
+app.get('/api/history/clear', authDashboard, (req, res) => {
+  const { clearHistory } = require('./src/features/aiReply');
+  clearHistory();
+  logger.info('[Dashboard] Chat history cleared');
+  res.json({ ok: true });
+});
+
+// ─── API: SSE Log stream ───
+app.get('/api/logs/stream', authDashboard, (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+  // Send recent logs as initial batch
+  const recent = logger.getRecentLogs();
+  for (const entry of recent) {
+    res.write(`data: ${JSON.stringify(entry)}\n\n`);
   }
+  logger.addSSEClient(res);
+  req.on('close', () => logger.removeSSEClient(res));
+});
+
+// ─── API: QR code data ───
+app.get('/api/qr', authDashboard, async (req, res) => {
+  if (isConnected) return res.json({ connected: true, qr: null });
+  if (!currentQR) return res.json({ connected: false, qr: null, waiting: true });
+  const qrImage = await QRCode.toDataURL(currentQR, { width: 280, margin: 2 });
+  const elapsed = qrGeneratedAt ? Math.floor((Date.now() - qrGeneratedAt) / 1000) : 0;
+  res.json({ connected: false, qr: qrImage, remaining: Math.max(60 - elapsed, 0) });
 });
 
 // QR code page (untuk scan dari browser)

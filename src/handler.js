@@ -22,6 +22,7 @@
 
 const config = require('../config.js');
 const logger = require('./utils/logger');
+const { trackContact } = require('./utils/contacts');
 const { handleCommand, isAway, addToInbox, isGroupEnabled, getGroupStyle } = require('./features/botControl');
 const aiReply = require('./features/aiReply');
 
@@ -168,6 +169,7 @@ async function handleMessage(sock, msg) {
   }
 
   logger.incoming(msg.from.split('@')[0], msg.text);
+  trackContact(msg.from, msg.name, msg.text);
 
   // ─── CEK: Apakah bot sedang away? ───
   const botIsAway = isAway() || isScheduledAway();
