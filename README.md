@@ -20,6 +20,11 @@ Uses AI to generate contextual, human-like responses — not canned templates.
 
 </div>
 
+<div align="center">
+<img src="public/screenshots/cli.png" alt="CLI Terminal" width="48%">
+<img src="public/screenshots/dashboard.png" alt="Dashboard" width="48%">
+</div>
+
 ---
 
 ## Table of Contents
@@ -424,6 +429,11 @@ The dashboard provides a full control panel accessible from any browser.
 **Access:** `https://YOUR_URL/dashboard?key=YOUR_OWNER_NUMBER`
 
 The `key` parameter is your `OWNER_NUMBER` from the `.env` file. Without it, the dashboard returns 401.
+
+<div align="center">
+<img src="public/screenshots/dashboard.png" alt="Dashboard Overview" width="48%">
+<img src="public/screenshots/config.png" alt="Configuration Panel" width="48%">
+</div>
 
 ### Pages
 
