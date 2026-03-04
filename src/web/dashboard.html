@@ -208,13 +208,13 @@ select.ctrl-select:hover{border-color:var(--border-h)}
 
   <!-- Logs -->
   <div class="content page" id="p-logs" style="display:none">
-    <div class="ctrl-bar"><h2 style="font-size:16px;font-weight:600">Live Logs</h2><div style="flex:1"></div><span class="pill green"><span class="dot"></span>streaming</span></div>
+    <div class="ctrl-bar"><h2 style="font-size:16px;font-weight:600">Live Logs</h2><div style="flex:1"></div><button class="btn danger" onclick="clearLogs()">Clear</button><span class="pill green"><span class="dot"></span>streaming</span></div>
     <div class="sec"><div class="sec-hd"><h3>Log Feed</h3><span class="cnt" id="el-log-cnt">0</span></div><div class="log-feed" id="el-logs"></div></div>
   </div>
 
   <!-- Contacts -->
   <div class="content page" id="p-contacts" style="display:none">
-    <div class="ctrl-bar"><h2 style="font-size:16px;font-weight:600">Contacts</h2></div>
+    <div class="ctrl-bar"><h2 style="font-size:16px;font-weight:600">Contacts</h2><div style="flex:1"></div><button class="btn danger" onclick="clearContacts()">Clear</button></div>
     <div class="sec"><div class="sec-hd"><h3>Recent</h3><span class="cnt" id="el-contact-cnt">0</span></div><div id="el-contacts"><div class="empty">No contacts yet</div></div></div>
   </div>
 
@@ -386,6 +386,8 @@ async function changeModel(v){if(!v)return;await post('/api/model',{model:v});to
 async function changeLang(v){if(!v)return;await post('/api/language',{lang:v});toast('Language → '+v);refreshData()}
 async function clearInbox(){if(!confirm('Clear inbox?'))return;await api('/api/inbox/clear');toast('Inbox cleared');refreshData()}
 async function clearHistory(){if(!confirm('Clear AI history?'))return;await api('/api/history/clear');toast('History cleared');refreshData()}
+async function clearLogs(){if(!confirm('Clear logs?'))return;await api('/api/logs/clear');logCount=0;document.getElementById('el-logs').innerHTML='';document.getElementById('b-logs').textContent='0';document.getElementById('el-log-cnt').textContent='0';toast('Logs cleared')}
+async function clearContacts(){if(!confirm('Clear contacts?'))return;await api('/api/contacts/clear');toast('Contacts cleared');refreshData()}
 
 // SSE Logs
 function initSSE(){

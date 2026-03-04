@@ -29,4 +29,6 @@ function getContacts(limit = 50) {
     .slice(0, limit);
 }
 
-module.exports = { trackContact, getContacts };
+function clearContacts() { contacts.clear(); }
+
+module.exports = { trackContact, getContacts, clearContacts };

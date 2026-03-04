@@ -101,7 +101,7 @@ module.exports = {
     // Default udah termasuk deteksi waktu, event, Ramadan, dll
     contextualPrompt: "",
 
-    maxTokens: 500,             // Max panjang jawaban AI (dalam token)
+    maxTokens: 1200,            // Max panjang jawaban AI (dalam token, ~900 kata)
 
     // Chat history — AI ingat percakapan sebelumnya per kontak
     chatHistory: {

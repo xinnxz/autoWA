@@ -61,5 +61,7 @@ function outgoing(to, message) {
   broadcast({ type: 'out', to, msg: short, time: Date.now() });
 }
 
-module.exports = { info, warn, error, debug, incoming, outgoing, addSSEClient, removeSSEClient, getRecentLogs };
+function clearLogs() { recentLogs.length = 0; }
+
+module.exports = { info, warn, error, debug, incoming, outgoing, addSSEClient, removeSSEClient, getRecentLogs, clearLogs };
 

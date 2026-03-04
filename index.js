@@ -178,6 +178,21 @@ app.get('/api/history/clear', authDashboard, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── API: Clear logs ───
+app.get('/api/logs/clear', authDashboard, (req, res) => {
+  logger.clearLogs();
+  logger.info('[Dashboard] Logs cleared');
+  res.json({ ok: true });
+});
+
+// ─── API: Clear contacts ───
+app.get('/api/contacts/clear', authDashboard, (req, res) => {
+  const { clearContacts } = require('./src/utils/contacts');
+  clearContacts();
+  logger.info('[Dashboard] Contacts cleared');
+  res.json({ ok: true });
+});
+
 // ─── API: SSE Log stream ───
 app.get('/api/logs/stream', authDashboard, (req, res) => {
   res.writeHead(200, {
