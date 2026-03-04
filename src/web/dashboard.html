@@ -170,28 +170,15 @@ select.ctrl-select:hover{border-color:var(--border-h)}
     <div class="right"><span class="pill green" id="el-pill"><span class="dot"></span><span id="el-status">—</span></span></div>
   </div>
 
-  <!-- Dashboard -->
+  <!-- Dashboard (read-only monitoring) -->
   <div class="content page" id="p-dash">
     <div class="ctrl-bar">
-      <button class="btn" id="btn-away" onclick="toggleAway()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Away</button>
-      <select class="ctrl-select" id="sel-style" onchange="changeStyle(this.value)" title="Reply style"><option value="">Style...</option></select>
-      <select class="ctrl-select" id="sel-model" onchange="changeModel(this.value)" title="AI model">
-        <option value="">Model...</option>
-        <option value="llama-3.3-70b-versatile">Llama 70B</option>
-        <option value="llama-3.1-8b-instant">Llama 8B</option>
-        <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
-        <option value="openai/gpt-oss-20b">GPT-OSS 20B</option>
-        <option value="qwen/qwen3-32b">Qwen 32B</option>
-        <option value="moonshotai/kimi-k2-instruct">Kimi K2</option>
-        <option value="meta-llama/llama-4-maverick-17b-128e-instruct">Maverick</option>
-        <option value="meta-llama/llama-4-scout-17b-16e-instruct">Scout</option>
-      </select>
-      <select class="ctrl-select" id="sel-lang" onchange="changeLang(this.value)" title="Bot language"><option value="">Lang...</option></select>
+      <h2 style="font-size:16px;font-weight:600">Overview</h2>
+      <div style="flex:1"></div>
       <button class="btn" onclick="refreshData()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Refresh</button>
-      <button class="btn danger" onclick="clearHistory()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 110 20 10 10 0 010-20z"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5"/></svg> Clear History</button>
     </div>
     <div class="stat-grid">
-      <div class="s-card"><div class="lbl">Uptime</div><div class="val" id="s-up">—</div></div>
+      <div class="s-card"><div class="lbl">Uptime</div><div class="val" id="s-up">--</div></div>
       <div class="s-card"><div class="lbl">Inbox</div><div class="val" id="s-in">0</div></div>
       <div class="s-card"><div class="lbl">AI Calls</div><div class="val" id="s-calls">0</div><div class="sub" id="s-avg"></div></div>
       <div class="s-card"><div class="lbl">Contacts</div><div class="val" id="s-contacts">0</div></div>
@@ -227,10 +214,39 @@ select.ctrl-select:hover{border-color:var(--border-h)}
     <div class="sec"><div class="sec-hd"><h3>Recent</h3><span class="cnt" id="el-contact-cnt">0</span></div><div id="el-contacts"><div class="empty">No contacts yet</div></div></div>
   </div>
 
-  <!-- Config -->
+  <!-- Configuration (all controls) -->
   <div class="content page" id="p-config" style="display:none">
-    <div class="ctrl-bar"><h2 style="font-size:16px;font-weight:600">Configuration</h2><div style="flex:1"></div><button class="btn" onclick="saveConfig()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button></div>
-    <div class="sec"><div class="sec-hd"><h3>Editable</h3></div>
+    <div class="ctrl-bar">
+      <h2 style="font-size:16px;font-weight:600">Configuration</h2>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="saveConfig()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>
+    </div>
+
+    <!-- Quick Controls -->
+    <div class="sec">
+      <div class="sec-hd"><h3>Quick Controls</h3></div>
+      <div class="ctrl-bar" style="border:none;padding:8px 0">
+        <button class="btn" id="btn-away" onclick="toggleAway()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Away</button>
+        <select class="ctrl-select" id="sel-style" onchange="changeStyle(this.value)" title="Reply style"><option value="">Style...</option></select>
+        <select class="ctrl-select" id="sel-model" onchange="changeModel(this.value)" title="AI model">
+          <option value="">Model...</option>
+          <option value="llama-3.3-70b-versatile">Llama 70B</option>
+          <option value="llama-3.1-8b-instant">Llama 8B</option>
+          <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
+          <option value="openai/gpt-oss-20b">GPT-OSS 20B</option>
+          <option value="qwen/qwen3-32b">Qwen 32B</option>
+          <option value="moonshotai/kimi-k2-instruct">Kimi K2</option>
+          <option value="meta-llama/llama-4-maverick-17b-128e-instruct">Maverick</option>
+          <option value="meta-llama/llama-4-scout-17b-16e-instruct">Scout</option>
+        </select>
+        <select class="ctrl-select" id="sel-lang" onchange="changeLang(this.value)" title="Bot language"><option value="">Lang...</option></select>
+        <button class="btn danger" onclick="clearHistory()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Clear History</button>
+      </div>
+    </div>
+
+    <!-- Editable Settings -->
+    <div class="sec" style="margin-top:14px">
+      <div class="sec-hd"><h3>Settings</h3></div>
       <div class="cfg-grid" id="el-cfg-edit">
         <div class="cfg-item"><span class="k">Owner Name</span><input class="cfg-input" id="cfg-name" placeholder="Name"></div>
         <div class="cfg-item"><span class="k">Reply Delay</span><input class="cfg-input" id="cfg-delay" type="number" min="500" max="10000" step="500" placeholder="ms"></div>
@@ -240,7 +256,9 @@ select.ctrl-select:hover{border-color:var(--border-h)}
         <div class="cfg-item"><span class="k">Chat History</span><label class="toggle"><input type="checkbox" id="cfg-hist"><span class="slider"></span></label></div>
       </div>
     </div>
-    <div class="sec" style="margin-top:14px"><div class="sec-hd"><h3>Read-Only</h3></div><div class="cfg-grid" id="el-cfg"></div></div>
+
+    <!-- Read-Only Info -->
+    <div class="sec" style="margin-top:14px"><div class="sec-hd"><h3>Current Values</h3></div><div class="cfg-grid" id="el-cfg"></div></div>
   </div>
 
   <!-- Groups -->
