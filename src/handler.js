@@ -109,9 +109,6 @@ async function handleMessage(sock, msg) {
   // ─── IGNORE: Status broadcast ───
   if (msg.from === 'status@broadcast') return;
 
-  // Debug: log all incoming messages
-  logger.info(`[MSG] from=${msg.from.split('@')[0]} fromMe=${msg.raw?.key?.fromMe} text="${msg.text?.substring(0,50)}"`);
-
   // ─── GROUP HANDLING ───
   // Group messages: check if group is enabled, otherwise ignore
   if (msg.isGroup) {
@@ -159,16 +156,13 @@ async function handleMessage(sock, msg) {
   const ownerNumber = process.env.OWNER_NUMBER || '';
   const senderNumber = msg.from.split('@')[0].split(':')[0];
   const isOwner = senderNumber === ownerNumber || msg.raw?.key?.fromMe;
-  logger.info(`[CMD] owner check: sender=${senderNumber} ownerEnv=${ownerNumber} fromMe=${msg.raw?.key?.fromMe} isOwner=${isOwner}`);
   if (isOwner) {
     if (msg.text.startsWith('!')) {
-      logger.info(`[CMD] Processing command: "${msg.text}"`);
       try {
         const handled = await handleCommand(sock, msg);
-        logger.info(`[CMD] handleCommand returned: ${handled}`);
         if (handled) return;
       } catch (cmdErr) {
-        logger.error(`[CMD] Command error:`, cmdErr);
+        logger.error('[CMD] Command error:', cmdErr);
       }
       if (msg.text.startsWith(config.ai.prefix)) {
         await aiReply.handle(sock, msg);
