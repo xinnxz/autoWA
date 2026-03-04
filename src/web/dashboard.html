@@ -165,8 +165,8 @@ select.ctrl-select:hover{border-color:var(--border-h)}
   <div class="content page" id="p-dash">
     <div class="ctrl-bar">
       <button class="btn" id="btn-away" onclick="toggleAway()">⏸ Away</button>
-      <select class="ctrl-select" id="sel-style" onchange="changeStyle(this.value)"><option value="">Style...</option></select>
-      <select class="ctrl-select" id="sel-model" onchange="changeModel(this.value)">
+      <select class="ctrl-select" id="sel-style" onchange="changeStyle(this.value)" title="Reply style"><option value="">Style...</option></select>
+      <select class="ctrl-select" id="sel-model" onchange="changeModel(this.value)" title="AI model">
         <option value="">Model...</option>
         <option value="llama-3.3-70b-versatile">Llama 70B</option>
         <option value="llama-3.1-8b-instant">Llama 8B</option>
@@ -177,6 +177,7 @@ select.ctrl-select:hover{border-color:var(--border-h)}
         <option value="meta-llama/llama-4-maverick-17b-128e-instruct">Maverick</option>
         <option value="meta-llama/llama-4-scout-17b-16e-instruct">Scout</option>
       </select>
+      <select class="ctrl-select" id="sel-lang" onchange="changeLang(this.value)" title="Bot language"><option value="">Lang...</option></select>
       <button class="btn" onclick="refreshData()">↻ Refresh</button>
       <button class="btn danger" onclick="clearHistory()">🧠 Clear History</button>
     </div>
@@ -284,12 +285,23 @@ function render(){
   if(d.awayMode){ab.textContent='▶ Go Online';ab.className='btn active-away'}
   else{ab.textContent='⏸ Away';ab.className='btn'}
 
-  // Style select
+  // Style select — populate from API
   const ss=document.getElementById('sel-style');
+  const presets=d.stylePresets||['santai','formal','gaul','campur'];
   if(ss.options.length<=1){
-    ['santai','formal','gaul','campur','custom'].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;ss.add(o)});
+    presets.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;ss.add(o)});
+    const co=document.createElement('option');co.value='custom';co.textContent='custom';ss.add(co);
   }
   ss.value=d.style||'';
+
+  // Language select — populate from API
+  const ls=document.getElementById('sel-lang');
+  const langs=d.availableLanguages||['id','en'];
+  const langLabels={id:'Indonesia',en:'English',es:'Español',ar:'Arabic',pt:'Português',ja:'日本語',hi:'हिन्दी',ko:'한국어',fr:'Français',ms:'Melayu'};
+  if(ls.options.length<=1){
+    langs.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=langLabels[l]||l;ls.add(o)});
+  }
+  ls.value=d.language||'id';
 
   // Inbox
   const inbox=d.inbox||[];
@@ -370,7 +382,8 @@ async function toggleAway(){
   toast(on?'Away OFF':'Away ON');refreshData();
 }
 async function changeStyle(v){if(!v)return;await post('/api/style',{style:v});toast('Style → '+v);refreshData()}
-async function changeModel(v){if(!v)return;await post('/api/model',{model:v});toast('Model changed');refreshData()}
+async function changeModel(v){if(!v)return;await post('/api/model',{model:v});toast('Model → '+shortM(v));refreshData()}
+async function changeLang(v){if(!v)return;await post('/api/language',{lang:v});toast('Language → '+v);refreshData()}
 async function clearInbox(){if(!confirm('Clear inbox?'))return;await api('/api/inbox/clear');toast('Inbox cleared');refreshData()}
 async function clearHistory(){if(!confirm('Clear AI history?'))return;await api('/api/history/clear');toast('History cleared');refreshData()}
 

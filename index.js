@@ -110,6 +110,8 @@ app.get('/api/stats', authDashboard, (req, res) => {
     contacts: getContacts(50),
     aiMetrics: metrics,
     qr: currentQR ? true : false,
+    stylePresets: (() => { try { return require('./src/utils/locale').getStylePresets(); } catch(e) { return ['santai','formal','gaul','campur']; } })(),
+    availableLanguages: ['id','en','es','ar','pt','ja','hi','ko','fr','ms'],
   });
 });
 
@@ -144,6 +146,20 @@ app.post('/api/model', authDashboard, (req, res) => {
   runtimeOverrides.model = model || null;
   logger.info(`[Dashboard] Model → ${model || 'default'}`);
   res.json({ ok: true, model: runtimeOverrides.model });
+});
+
+// ─── API: Control — Change language ───
+app.post('/api/language', authDashboard, (req, res) => {
+  const { lang } = req.body;
+  const available = ['id','en','es','ar','pt','ja','hi','ko','fr','ms'];
+  if (!lang || !available.includes(lang)) {
+    return res.json({ ok: false, error: 'Invalid language: ' + lang });
+  }
+  config.language = lang;
+  // Reset locale cache
+  try { delete require.cache[require.resolve('./src/utils/locale')]; } catch(e) {}
+  logger.info(`[Dashboard] Language \u2192 ${lang}`);
+  res.json({ ok: true, language: lang });
 });
 
 // ─── API: Clear inbox ───
