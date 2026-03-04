@@ -256,10 +256,10 @@ select.ctrl-select:hover{border-color:var(--border-h)}
         <div class="cfg-item"><span class="k">Cooldown(m)</span><input class="cfg-input" id="cfg-cool" type="number" min="30" max="3600" step="30" placeholder="seconds"></div>
         <div class="cfg-item"><span class="k">Contextual AI</span><label class="toggle"><input type="checkbox" id="cfg-ctx"><span class="slider"></span></label></div>
         <div class="cfg-item"><span class="k">Chat History</span><label class="toggle"><input type="checkbox" id="cfg-hist"><span class="slider"></span></label></div>
-        <div class="cfg-item"><span class="k">Ignore Groups</span><label class="toggle"><input type="checkbox" id="cfg-ig"><span class="slider"></span></label></div>
-        <div class="cfg-item"><span class="k">Auto Schedule</span><label class="toggle"><input type="checkbox" id="cfg-sched"><span class="slider"></span></label></div>
-        <div class="cfg-item"><span class="k">Sleep Start</span><input class="cfg-input" id="cfg-sched-s" type="time" placeholder="22:00"></div>
-        <div class="cfg-item"><span class="k">Sleep End</span><input class="cfg-input" id="cfg-sched-e" type="time" placeholder="07:00"></div>
+        <div class="cfg-item"><span class="k">Ignore Groups</span><label class="toggle"><input type="checkbox" id="cfg-ig" onchange="quickCfg('ignoreGroups',this.checked)"><span class="slider"></span></label></div>
+        <div class="cfg-item"><span class="k">Auto Schedule</span><label class="toggle"><input type="checkbox" id="cfg-sched" onchange="quickCfg('scheduleEnabled',this.checked)"><span class="slider"></span></label></div>
+        <div class="cfg-item"><span class="k">Sleep Start</span><input class="cfg-input" id="cfg-sched-s" type="time" onchange="quickCfg('scheduleStart',this.value)"></div>
+        <div class="cfg-item"><span class="k">Sleep End</span><input class="cfg-input" id="cfg-sched-e" type="time" onchange="quickCfg('scheduleEnd',this.value)"></div>
       </div>
     </div>
 
@@ -465,6 +465,7 @@ async function toggleAway(){
 }
 async function changeStyle(v){if(!v)return;await post('/api/style',{style:v});toast('Style → '+v);refreshData()}
 async function changeModel(v){if(!v)return;await post('/api/model',{model:v});toast('Model → '+shortM(v));refreshData()}
+async function quickCfg(key,val){const b={};b[key]=val;await post('/api/config',b);toast(key+' updated');refreshData()}
 async function changeLang(v){if(!v)return;await post('/api/language',{lang:v});toast('Language → '+v);refreshData()}
 async function clearInbox(){if(!confirm('Clear inbox?'))return;await api('/api/inbox/clear');toast('Inbox cleared');refreshData()}
 async function clearHistory(){if(!confirm('Clear AI history?'))return;await api('/api/history/clear');toast('History cleared');refreshData()}
