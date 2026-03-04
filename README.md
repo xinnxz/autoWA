@@ -309,6 +309,27 @@ If you prefer not to use the CLI:
 6. Choose **Free** instance type
 7. Click **Deploy**
 
+#### Persistent Auth (No Re-Scan on Restart)
+
+By default, Koyeb's free tier has no persistent storage. This means the bot loses its WhatsApp session on every restart and requires re-scanning the QR code.
+
+To fix this, use **MongoDB Atlas** (free) to store the WhatsApp auth credentials in the cloud:
+
+1. Go to [mongodb.com/atlas](https://www.mongodb.com/atlas) and create a free account
+2. Create a **free cluster** (M0 Sandbox, 512MB — no credit card)
+3. Create a database user (username + password)
+4. Go to **Network Access** → Add IP: `0.0.0.0/0` (allow all, required for Koyeb)
+5. Go to **Database** → Click **Connect** → Choose **Drivers** → Copy the connection string
+6. Replace `<password>` in the string with your database user's password
+7. Add the connection string as `MONGODB_URI` in Koyeb environment variables:
+
+```bash
+koyeb service update autowa --app autowa \
+  --env MONGODB_URI="mongodb+srv://user:pass@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority"
+```
+
+After the first QR scan, the session is stored in MongoDB. All future restarts will auto-connect without scanning again.
+
 ---
 
 ### Option 3 — Termux (Android)
@@ -543,6 +564,7 @@ Defined in `.env`. Copy from `.env.example` to get started.
 | `GEMINI_API_KEY_1` | No | Gemini API key (fallback). Get from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
 | `GEMINI_API_KEY_2..N` | No | Additional Gemini keys for rotation |
 | `PORT` | No | Server port. Default: `3000` |
+| `MONGODB_URI` | No | MongoDB Atlas connection string. Enables cloud auth persistence. See [Persistent Auth](#persistent-auth-no-re-scan-on-restart) |
 
 ### config.js Reference
 

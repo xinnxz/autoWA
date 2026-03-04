@@ -25,20 +25,33 @@ const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 const logger = require('./utils/logger');
 
-// Folder untuk simpan session auth
-// Di cloud (Koyeb), set AUTH_DIR ke path volume agar session persistent
+// Folder untuk simpan session auth (lokal)
 const AUTH_FOLDER = process.env.AUTH_DIR || './auth_info';
 
 /**
  * Buat koneksi WhatsApp menggunakan Baileys
  * 
- * @param {Function} onMessage - Callback saat ada pesan masuk
- * @param {Function} onQR - Callback saat QR code tersedia (untuk web display)
- * @param {Function} onConnected - Callback saat berhasil terhubung
- * @returns {Promise<object>} Socket WhatsApp yang sudah terkoneksi
+ * Auth storage:
+ * - Jika MONGODB_URI ada → simpan auth ke MongoDB Atlas (untuk cloud/Koyeb)
+ * - Jika tidak → simpan auth ke folder lokal (untuk development)
  */
 async function connectToWhatsApp(onMessage, onQR, onConnected) {
-  const { state, saveCreds } = await useMultiFileAuthState(AUTH_FOLDER);
+  let state, saveCreds;
+
+  if (process.env.MONGODB_URI) {
+    // Cloud mode: simpan auth ke MongoDB Atlas
+    const { useMongoDBAuthState } = require('./utils/mongoAuth');
+    const result = await useMongoDBAuthState(process.env.MONGODB_URI);
+    state = result.state;
+    saveCreds = result.saveCreds;
+    logger.info('[Auth] Mode: MongoDB Atlas (cloud-persistent)');
+  } else {
+    // Local mode: simpan auth ke folder
+    const result = await useMultiFileAuthState(AUTH_FOLDER);
+    state = result.state;
+    saveCreds = result.saveCreds;
+    logger.info('[Auth] Mode: Local filesystem (auth_info/)');
+  }
 
   const { version } = await fetchLatestBaileysVersion();
   logger.info(`Menggunakan Baileys v${version.join('.')}`);
