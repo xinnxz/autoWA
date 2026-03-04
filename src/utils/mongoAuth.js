@@ -27,10 +27,12 @@ const logger = require('./logger');
  * @returns {Promise<{ state, saveCreds, client }>}
  */
 async function useMongoDBAuthState(mongoUri, dbName = 'autowa') {
-  // Connect ke MongoDB with timeout
+  // Connect ke MongoDB with timeout + TLS fix for cloud platforms
   const client = new MongoClient(mongoUri, {
     connectTimeoutMS: 10000,
     serverSelectionTimeoutMS: 5000,
+    tls: true,
+    tlsAllowInvalidCertificates: true,
   });
   await client.connect();
   logger.info('[MongoDB] Terhubung ke MongoDB Atlas');
