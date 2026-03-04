@@ -106,9 +106,18 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
 
     if (connection === 'open') {
       if (sock._qrTimer) { clearInterval(sock._qrTimer); sock._qrTimer = null; }
+      const G = '\x1b[32m', B = '\x1b[1m', D = '\x1b[90m', R = '\x1b[0m';
+      const name = sock.user?.name || sock.user?.id || 'Unknown';
+      const port = process.env.PORT || 3000;
       console.log('');
-      logger.info('Terhubung ke WhatsApp!');
-      logger.info(`Logged in as: ${sock.user?.name || sock.user?.id}`);
+      console.log(`${G}  ┌──────────────────────────────────────┐${R}`);
+      console.log(`${G}  │  ${B}CONNECTED${R}${G}                             │${R}`);
+      console.log(`${G}  │  WhatsApp: ${name.padEnd(26)}│${R}`);
+      console.log(`${G}  │  Status:   Bot is online & ready      │${R}`);
+      console.log(`${G}  │  Dashboard: localhost:${String(port).padEnd(15)}│${R}`);
+      console.log(`${G}  └──────────────────────────────────────┘${R}`);
+      console.log('');
+      logger.info(`Terhubung sebagai ${name}`);
       if (onConnected) onConnected();
     }
 
