@@ -474,6 +474,15 @@ async function start() {
       logger.info(`QR Scanner: http://localhost:${PORT}`);
     });
 
+    // AI key check (tampilkan sebelum connecting)
+    const hasGroq = process.env.GROQ_API_KEY_1 || process.env.GROQ_API_KEY;
+    const hasGemini = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
+    if (hasGroq) logger.info('Groq API configured');
+    if (hasGemini) logger.info('Gemini API configured');
+    if (!hasGroq && !hasGemini) {
+      logger.warn('Tidak ada API key AI (Groq/Gemini). Fitur AI contextual tidak aktif.');
+    }
+
     logger.info('Menghubungkan ke WhatsApp...');
     const sock = await connectToWhatsApp(handleMessage, (qr) => {
       // Callback untuk QR update
@@ -481,13 +490,12 @@ async function start() {
       qrGeneratedAt = Date.now();
       logger.info('QR Code baru tersedia! Scan dari browser.');
     }, () => {
-      // Callback untuk connected
+      // Callback untuk connected — tampil SETELAH banner CONNECTED
       isConnected = true;
       currentQR = null;
       qrGeneratedAt = null;
+      logger.info('Bot aktif -- semua pesan masuk akan diproses otomatis');
     });
-    
-    logger.info('Bot siap! Menunggu pesan masuk...');
 
     // AI key check
     const hasGroq = process.env.GROQ_API_KEY_1 || process.env.GROQ_API_KEY;
