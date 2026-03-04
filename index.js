@@ -374,23 +374,15 @@ app.get('/', async (req, res) => {
 
 // ─── Tampilkan banner ───
 const startTime = new Date().toLocaleString('id-ID', { timeZone: config.timezone || 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'medium' });
+const G = '\x1b[32m', R = '\x1b[0m', D = '\x1b[90m';
 console.log('');
-console.log('╔══════════════════════════════════════════╗');
-console.log('║                                          ║');
-console.log('║   🤖 AutoWA Bot v2.0.0                   ║');
-console.log('║   Personal Auto-Reply (Baileys)          ║');
-console.log('║                                          ║');
-console.log(`║   ${startTime.padEnd(38)} ║`);
-console.log('║                                          ║');
-console.log('╚══════════════════════════════════════════╝');
-console.log('');
-
-// ─── Tips anti-ban ───
-console.log('🛡️  TIPS ANTI-BAN:');
-console.log('   1. Jangan reply terlalu cepat (delay aktif)');
-console.log('   2. Group chat diabaikan');
-console.log('   3. Max reply per kontak dibatasi');
-console.log('   4. Jangan broadcast massal');
+console.log(`${G}    _         _     __        ___    ${R}`);
+console.log(`${G}   / \\  _   _| |_ __\\ \\      / / \\   ${R}`);
+console.log(`${G}  / _ \\| | | | __/ _ \\ \\ /\\ / / _ \\  ${R}`);
+console.log(`${G} / ___ \\ |_| | || (_) \\ V  V / ___ \\ ${R}`);
+console.log(`${G}/_/   \\_\\__,_|\\__\\___/ \\_/\\_/_/   \\_\\${R}`);
+console.log(`${D}  v2.0.0 · Personal Auto-Reply Bot${R}`);
+console.log(`${D}  ${startTime}${R}`);
 console.log('');
 
 // ─── Config info ───
