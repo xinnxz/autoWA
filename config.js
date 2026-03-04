@@ -25,14 +25,14 @@ module.exports = {
   awayMode: {
     enabled: true,              // true = away mode aktif saat bot start
     messages: [                 // Pesan random fallback (dipakai kalo AI gagal)
-      "woy gw lagi tidur njir 😴 ntar gw bales kalo udah melek yak. sabar bre~\n\n_~autoreply by bot_",
-      "halo kak, lagi molor 💤 chat nya udah masuk kok, tar dibales. tenang aja~\n\n_~autoreply by bot_",
-      "ZONK! lagi gabisa dihubungi 🫠 mungkin lagi rebahan atau ketiduran. ntar ya!\n\n_~autoreply by bot_",
-      "maaf ya, lagi off 🔌 bukan sombong, emang lagi istirahat beneran wkwk\n\n_~autoreply by bot_",
-      "this number is currently unavailable ❌ becanda, cuma lagi tidur aja 😂 tar dibales!\n\n_~autoreply by bot_",
-      "gw lagi di alam mimpi ✨ kalo urgent, telpon aja. kalo ga urgent, sabar ya bestie 🙏\n\n_~autoreply by bot_",
-      "auto reply nih, lagi afk dari dunia nyata 🌙 ntar diread kok tenang~\n\n_~autoreply by bot_",
-      "eh sorry baru bisa bales nanti, lagi recharge energy dulu ⚡ tar gw kabarin ya!\n\n_~autoreply by bot_",
+      "woy gw lagi tidur njir 😴 ntar gw bales kalo udah melek yak. sabar bre~\n\n_~autoreply by luthfi_",
+      "halo kak, lagi molor 💤 chat nya udah masuk kok, tar dibales. tenang aja~\n\n_~autoreply by luthfi_",
+      "ZONK! lagi gabisa dihubungi 🫠 mungkin lagi rebahan atau ketiduran. ntar ya!\n\n_~autoreply by luthfi_",
+      "maaf ya, lagi off 🔌 bukan sombong, emang lagi istirahat beneran wkwk\n\n_~autoreply by luthfi_",
+      "this number is currently unavailable ❌ becanda, cuma lagi tidur aja 😂 tar dibales!\n\n_~autoreply by luthfi_",
+      "gw lagi di alam mimpi ✨ kalo urgent, telpon aja. kalo ga urgent, sabar ya bestie 🙏\n\n_~autoreply by luthfi_",
+      "auto reply nih, lagi afk dari dunia nyata 🌙 ntar diread kok tenang~\n\n_~autoreply by luthfi_",
+      "eh sorry baru bisa bales nanti, lagi recharge energy dulu ⚡ tar gw kabarin ya!\n\n_~autoreply by luthfi_",
     ],
     cooldown: 300,              // Cooldown antar reply (detik)
     schedule: {

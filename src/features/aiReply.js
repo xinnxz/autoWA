@@ -277,7 +277,7 @@ function buildDynamicContext() {
   if (ramadan) {
     const startDate = new Date(tahun, ramadan.start[0], ramadan.start[1]);
     const endDate = new Date(tahun, ramadan.end[0], ramadan.end[1]);
-    if (jakarta >= startDate && jakarta <= endDate) {
+    if (local >= startDate && local <= endDate) {
       let ramadanCtx = 'Bulan Ramadan — owner sedang puasa.';
       if (jam >= 3 && jam < 5) ramadanCtx += ' Waktu sahur.';
       else if (jam >= 17 && jam < 19) ramadanCtx += ' Sebentar lagi buka puasa.';
