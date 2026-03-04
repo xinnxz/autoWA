@@ -36,32 +36,12 @@ const AUTH_FOLDER = process.env.AUTH_DIR || './auth_info';
  * - Otherwise → store auth in local folder (for development)
  */
 async function connectToWhatsApp(onMessage, onQR, onConnected) {
-  let state, saveCreds;
-
-  if (process.env.MONGODB_URI) {
-    try {
-      // Cloud mode: store auth in MongoDB Atlas
-      const { useMongoDBAuthState } = require('./utils/mongoAuth');
-      const result = await useMongoDBAuthState(process.env.MONGODB_URI);
-      state = result.state;
-      saveCreds = result.saveCreds;
-      logger.info('[Auth] Mode: MongoDB Atlas (cloud-persistent)');
-    } catch (err) {
-      logger.warn(`[Auth] MongoDB failed: ${err.message} — falling back to filesystem`);
-      const result = await useMultiFileAuthState(AUTH_FOLDER);
-      state = result.state;
-      saveCreds = result.saveCreds;
-    }
-  } else {
-    // Local mode: simpan auth ke folder
-    const result = await useMultiFileAuthState(AUTH_FOLDER);
-    state = result.state;
-    saveCreds = result.saveCreds;
-    logger.info('[Auth] Mode: Local filesystem (auth_info/)');
-  }
+  // File-based auth — session stored in auth_info/ folder
+  const { state, saveCreds } = await useMultiFileAuthState(AUTH_FOLDER);
+  logger.info(`[Auth] Using local filesystem (${AUTH_FOLDER})`);
 
   const { version } = await fetchLatestBaileysVersion();
-  logger.info(`Menggunakan Baileys v${version.join('.')}`);
+  logger.info(`Using Baileys v${version.join('.')}`);
 
   const sock = makeWASocket({
     version,
