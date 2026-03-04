@@ -321,11 +321,14 @@ app.get('/', async (req, res) => {
 });
 
 // ─── Tampilkan banner ───
+const startTime = new Date().toLocaleString('id-ID', { timeZone: config.timezone || 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'medium' });
 console.log('');
 console.log('╔══════════════════════════════════════════╗');
 console.log('║                                          ║');
-console.log('║   🤖 AutoWA Bot v2.0.0                   ║');
-console.log('║   Personal Auto-Reply (Baileys)           ║');
+console.log('║   🤖 AutoWA Bot v2.0.0                  ║');
+console.log('║   Personal Auto-Reply (Baileys)         ║');
+console.log('║                                          ║');
+console.log(`║   ${startTime.padEnd(38)} ║`);
 console.log('║                                          ║');
 console.log('╚══════════════════════════════════════════╝');
 console.log('');
@@ -340,13 +343,15 @@ console.log('');
 
 // ─── Config info ───
 logger.info(`Owner: ${process.env.OWNER_NAME || 'Not set'}`);
-logger.info(`Away Mode: ${config.awayMode.enabled ? '✅ ON' : '❌ OFF'}`);
+logger.info(`Language: ${config.language || 'id'}`);
+logger.info(`Away Mode: ${config.awayMode.enabled ? 'ON' : 'OFF'}`);
 if (config.awayMode.schedule.enabled) {
   logger.info(`Schedule: Away ${config.awayMode.schedule.sleepStart} - ${config.awayMode.schedule.sleepEnd} WIB`);
 }
 logger.info(`Reply Delay: ${config.safety.replyDelay}ms`);
 logger.info(`Max Reply/Contact: ${config.safety.maxRepliesPerContact}x (cooldown ${config.safety.cooldownPerContact}s)`);
 logger.info(`Ignore Groups: ${config.safety.ignoreGroups ? 'Ya' : 'Tidak'}`);
+logger.info(`Dashboard: http://localhost:${PORT}/dashboard?key=***`);
 console.log('');
 
 // ─── Start bot! ───
