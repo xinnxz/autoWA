@@ -110,8 +110,12 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
     }
   });
 
-  // ─── 5. Simpan credentials saat ada update ───
-  sock.ev.on('creds.update', saveCreds);
+  // ─── 5. Simpan credentials saat ada update (silent) ───
+  sock.ev.on('creds.update', async () => {
+    const origLog = console.log;
+    console.log = () => {};  // suppress Baileys session dump
+    try { await saveCreds(); } finally { console.log = origLog; }
+  });
 
   // ─── 6. Handle pesan masuk ───
   sock.ev.on('messages.upsert', async (m) => {
