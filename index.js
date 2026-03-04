@@ -335,7 +335,7 @@ app.get('/', async (req, res) => {
   if (isConnected) {
     return res.send('<html><head><title>AutoWA — Connected</title>' + head
       + '<style>.icon{width:72px;height:72px;border-radius:50%;background:#e8faf0;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;animation:pop .5s ease}.icon svg{width:36px;height:36px}@keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.1)}100%{transform:scale(1)}}h1{color:#00a884}.meta{color:#8696a0;font-size:13px;margin-top:20px;padding-top:16px;border-top:1px solid #e9edef}</style></head>'
-      + '<body><div class="ctn">' + logo
+      + '<body><div class="ctn">'
       + '<div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#00a884" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
       + '<h1>Connected</h1>'
       + '<p class="sub">Your WhatsApp is linked successfully.<br>AutoWA bot is active and processing messages.</p>'
@@ -348,7 +348,7 @@ app.get('/', async (req, res) => {
     return res.send('<html><head><title>AutoWA — Connecting</title>' + head
       + '<meta http-equiv="refresh" content="3">'
       + '<style>.spin{width:44px;height:44px;margin:0 auto 24px;border:3px solid #e9edef;border-top-color:#00a884;border-radius:50%;animation:r .8s linear infinite}@keyframes r{to{transform:rotate(360deg)}}</style></head>'
-      + '<body><div class="ctn">' + logo
+      + '<body><div class="ctn">'
       + '<div class="spin"></div>'
       + '<h1>Generating QR Code</h1>'
       + '<p class="sub">Please wait, this page refreshes automatically.</p>'
@@ -376,10 +376,10 @@ app.get('/', async (req, res) => {
     + '.lb{color:#8696a0;font-size:12px}'
     + '</style>';
 
-  const timerJS = '<script>let s=' + remaining + ';var t=document.getElementById("t"),b=document.getElementById("b"),l=document.getElementById("l");setInterval(function(){s--;if(s<=0){t.textContent="Expired";t.className="tm d";b.style.width="0%";l.textContent="Refreshing...";setTimeout(function(){location.reload()},2e3);return}t.textContent=s;b.style.width=(s/60*100)+"%";if(s<=10){t.className="tm d";b.className="bf d"}else if(s<=25){t.className="tm w";b.className="bf w"}},1e3)</script>';
+  const timerJS = '<script>let s=' + remaining + ';var t=document.getElementById("t"),b=document.getElementById("b"),l=document.getElementById("l");setInterval(function(){s--;if(s<=0){t.textContent="Expired";t.className="tm d";b.style.width="0%";l.textContent="Refreshing...";setTimeout(function(){location.reload()},2e3);return}t.textContent=s;b.style.width=(s/60*100)+"%";if(s<=10){t.className="tm d";b.className="bf d"}else if(s<=25){t.className="tm w";b.className="bf w"}},1e3);setInterval(function(){fetch("/health").then(function(r){return r.json()}).then(function(d){if(d.status==="connected"){location.reload()}}).catch(function(){})},2e3)</script>';
 
   res.send('<html><head><title>AutoWA — Scan QR Code</title>' + head + stepsCSS + '</head>'
-    + '<body><div class="ctn">' + logo
+    + '<body><div class="ctn">'
     + '<h1>Link a Device</h1>'
     + '<p class="sub">Scan this QR code from your WhatsApp to connect.</p>'
     + '<div class="steps">'
