@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AutoWA</title>
+<link rel="icon" type="image/svg+xml" href="/public/logo.svg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -534,11 +535,8 @@ themeBtn.addEventListener('click',()=>setTheme(document.documentElement.dataset.
 const saved=localStorage.getItem('autowa-theme');if(saved)setTheme(saved);
 
 // Keyboard
-document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
-  const m={d:'dash',i:'inbox',l:'logs',c:'contacts',s:'config',g:'groups',q:'conn'};
-  const p=m[e.key.toLowerCase()];if(p){const it=document.querySelector(`[data-p="${p}"]`);if(it)it.click()}
-  if(e.key==='r')refreshData();
-});
+
+
 
 // Init
 refreshData();initSSE();setInterval(refreshData,15000);

@@ -325,6 +325,7 @@ app.get('/api/qr', authDashboard, async (req, res) => {
 // QR code page — WhatsApp-style light theme
 app.get('/', async (req, res) => {
   const head = '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<link rel="icon" type="image/svg+xml" href="/public/logo.svg">'
     + '<link rel="preconnect" href="https://fonts.googleapis.com">'
     + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">'
     + '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f0f2f5;display:flex;align-items:center;justify-content:center;min-height:100vh}.ctn{background:#fff;border-radius:12px;padding:48px 52px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.04);max-width:460px;width:92%}h1{font-size:20px;font-weight:600;color:#111b21;margin-bottom:8px}.sub{color:#667781;font-size:14px;line-height:1.5;margin-bottom:24px}</style>';

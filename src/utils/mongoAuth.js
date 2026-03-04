@@ -27,15 +27,24 @@ const logger = require('./logger');
  * @returns {Promise<{ state, saveCreds, client }>}
  */
 async function useMongoDBAuthState(mongoUri, dbName = 'autowa') {
-  // Connect ke MongoDB with timeout + TLS fix for cloud platforms
+  // Temporarily disable TLS cert verification for MongoDB Atlas on Koyeb
+  // (OpenSSL 3.x on some cloud platforms has strict TLS that breaks Atlas connection)
+  const prevTLS = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
   const client = new MongoClient(mongoUri, {
     connectTimeoutMS: 10000,
     serverSelectionTimeoutMS: 5000,
-    tls: true,
-    tlsAllowInvalidCertificates: true,
   });
   await client.connect();
-  logger.info('[MongoDB] Terhubung ke MongoDB Atlas');
+
+  // Restore TLS verification after connection is established
+  if (prevTLS !== undefined) {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = prevTLS;
+  } else {
+    delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  }
+  logger.info('[MongoDB] Connected to MongoDB Atlas');
 
   const db = client.db(dbName);
   const collection = db.collection('auth');
