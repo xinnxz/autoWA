@@ -31,24 +31,49 @@ const logger = require('./logger');
  * @returns {Promise<{ state, saveCreds, client }>}
  */
 async function useMongoDBAuthState(mongoUri, dbName = 'autowa') {
-  // Fix for OpenSSL 3.x on Koyeb/cloud — disable strict TLS verification
-  const prevTLS = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  // Disable strict TLS verification for cloud platforms
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-  const client = new MongoClient(mongoUri, {
+  let finalUri = mongoUri;
+
+  // If using mongodb+srv://, manually resolve SRV records and convert to standard mongodb://
+  // This bypasses TLS handshake issues on Koyeb's OpenSSL 3.x
+  if (mongoUri.startsWith('mongodb+srv://')) {
+    try {
+      const dnsPromises = require('dns').promises;
+      const parsed = new URL(mongoUri);
+      const srvHost = parsed.hostname; // e.g. cluster0.2wbetza.mongodb.net
+
+      // Resolve SRV records to get actual server addresses
+      const srvRecords = await dnsPromises.resolveSrv(`_mongodb._tcp.${srvHost}`);
+      const hosts = srvRecords.map(r => `${r.name}:${r.port}`).join(',');
+
+      // Get TXT records for connection options (replicaSet, authSource, etc.)
+      let txtOpts = '';
+      try {
+        const txtRecords = await dnsPromises.resolveTxt(srvHost);
+        txtOpts = txtRecords.flat().join('');
+      } catch (e) { /* TXT records are optional */ }
+
+      // Build standard mongodb:// URI
+      const auth = parsed.username + ':' + parsed.password;
+      const existingParams = parsed.search ? parsed.search.substring(1) : '';
+      const allParams = [txtOpts, existingParams, 'tls=true'].filter(Boolean).join('&');
+      finalUri = `mongodb://${auth}@${hosts}/${parsed.pathname.substring(1)}?${allParams}`;
+
+      logger.info(`[MongoDB] SRV resolved: ${srvRecords.length} hosts found`);
+    } catch (dnsErr) {
+      logger.warn(`[MongoDB] SRV resolution failed: ${dnsErr.message}, using original URI`);
+      finalUri = mongoUri;
+    }
+  }
+
+  const client = new MongoClient(finalUri, {
     connectTimeoutMS: 15000,
     serverSelectionTimeoutMS: 10000,
-    // Force IPv4 to avoid TLS handshake failures with IPv6 on cloud platforms
     family: 4,
   });
   await client.connect();
-
-  // Restore TLS verification after connection is established
-  if (prevTLS !== undefined) {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = prevTLS;
-  } else {
-    delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-  }
   logger.info('[MongoDB] Connected to MongoDB Atlas');
 
   const db = client.db(dbName);
