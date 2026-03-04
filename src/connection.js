@@ -39,12 +39,19 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
   let state, saveCreds;
 
   if (process.env.MONGODB_URI) {
-    // Cloud mode: simpan auth ke MongoDB Atlas
-    const { useMongoDBAuthState } = require('./utils/mongoAuth');
-    const result = await useMongoDBAuthState(process.env.MONGODB_URI);
-    state = result.state;
-    saveCreds = result.saveCreds;
-    logger.info('[Auth] Mode: MongoDB Atlas (cloud-persistent)');
+    try {
+      // Cloud mode: simpan auth ke MongoDB Atlas
+      const { useMongoDBAuthState } = require('./utils/mongoAuth');
+      const result = await useMongoDBAuthState(process.env.MONGODB_URI);
+      state = result.state;
+      saveCreds = result.saveCreds;
+      logger.info('[Auth] Mode: MongoDB Atlas (cloud-persistent)');
+    } catch (err) {
+      logger.warn(`[Auth] MongoDB gagal: ${err.message} — fallback ke filesystem`);
+      const result = await useMultiFileAuthState(AUTH_FOLDER);
+      state = result.state;
+      saveCreds = result.saveCreds;
+    }
   } else {
     // Local mode: simpan auth ke folder
     const result = await useMultiFileAuthState(AUTH_FOLDER);
