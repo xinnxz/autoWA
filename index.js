@@ -53,6 +53,7 @@ app.use(express.json());
 
 // ─── Dashboard page ───
 const path = require('path');
+app.use('/docs', express.static(path.join(__dirname, 'docs')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.get('/dashboard', authDashboard, (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'web', 'dashboard.html'));
