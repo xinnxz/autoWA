@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/logo.jpg" alt="AutoWA" width="280">
+<img src="public/logo.jpg" alt="AutoWA" width="280">
 
 # AutoWA
 
