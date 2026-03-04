@@ -249,11 +249,17 @@ select.ctrl-select:hover{border-color:var(--border-h)}
       <div class="sec-hd"><h3>Settings</h3></div>
       <div class="cfg-grid" id="el-cfg-edit">
         <div class="cfg-item"><span class="k">Owner Name</span><input class="cfg-input" id="cfg-name" placeholder="Name"></div>
-        <div class="cfg-item"><span class="k">Reply Delay</span><input class="cfg-input" id="cfg-delay" type="number" min="500" max="10000" step="500" placeholder="ms"></div>
+        <div class="cfg-item"><span class="k">Timezone</span><input class="cfg-input" id="cfg-tz" placeholder="Asia/Jakarta"></div>
+        <div class="cfg-item"><span class="k">Reply Delay(s)</span><input class="cfg-input" id="cfg-delay" type="number" min="500" max="10000" step="500" placeholder="ms"></div>
+        <div class="cfg-item"><span class="k">Max Tokens</span><input class="cfg-input" id="cfg-tokens" type="number" min="200" max="4096" step="100" placeholder="tokens"></div>
         <div class="cfg-item"><span class="k">Max Replies</span><input class="cfg-input" id="cfg-max" type="number" min="1" max="20" placeholder="per contact"></div>
-        <div class="cfg-item"><span class="k">Cooldown</span><input class="cfg-input" id="cfg-cool" type="number" min="30" max="3600" step="30" placeholder="seconds"></div>
+        <div class="cfg-item"><span class="k">Cooldown(m)</span><input class="cfg-input" id="cfg-cool" type="number" min="30" max="3600" step="30" placeholder="seconds"></div>
         <div class="cfg-item"><span class="k">Contextual AI</span><label class="toggle"><input type="checkbox" id="cfg-ctx"><span class="slider"></span></label></div>
         <div class="cfg-item"><span class="k">Chat History</span><label class="toggle"><input type="checkbox" id="cfg-hist"><span class="slider"></span></label></div>
+        <div class="cfg-item"><span class="k">Ignore Groups</span><label class="toggle"><input type="checkbox" id="cfg-ig"><span class="slider"></span></label></div>
+        <div class="cfg-item"><span class="k">Auto Schedule</span><label class="toggle"><input type="checkbox" id="cfg-sched"><span class="slider"></span></label></div>
+        <div class="cfg-item"><span class="k">Sleep Start</span><input class="cfg-input" id="cfg-sched-s" type="time" placeholder="22:00"></div>
+        <div class="cfg-item"><span class="k">Sleep End</span><input class="cfg-input" id="cfg-sched-e" type="time" placeholder="07:00"></div>
       </div>
     </div>
 
@@ -263,8 +269,11 @@ select.ctrl-select:hover{border-color:var(--border-h)}
 
   <!-- Groups -->
   <div class="content page" id="p-groups" style="display:none">
-    <div class="ctrl-bar"><h2 style="font-size:16px;font-weight:600">Groups</h2></div>
-    <div class="sec"><div class="sec-hd"><h3>Enabled</h3><span class="cnt" id="el-grp-cnt">0</span></div><div id="el-groups"><div class="empty">No groups enabled</div></div></div>
+    <div class="ctrl-bar"><h2 style="font-size:16px;font-weight:600">Groups</h2><div style="flex:1"></div><span class="pill" id="grp-ig-pill" style="font-size:11px"></span></div>
+    <div class="sec">
+      <div class="sec-hd"><h3>Registered</h3><span class="cnt" id="el-grp-cnt">0</span></div>
+      <div id="el-groups"><div class="empty">No groups registered. Use <b>!group on</b> in a group chat.</div></div>
+    </div>
   </div>
 
   <!-- Connection -->
@@ -385,23 +394,32 @@ function render(){
 
   // Config — editable fields
   document.getElementById('cfg-name').value=d.owner||'';
+  document.getElementById('cfg-tz').value=d.timezone||'Asia/Jakarta';
   document.getElementById('cfg-delay').value=d.replyDelay||2000;
+  document.getElementById('cfg-tokens').value=d.maxTokens||500;
   document.getElementById('cfg-max').value=d.maxReplies||3;
   document.getElementById('cfg-cool').value=d.cooldown||300;
   document.getElementById('cfg-ctx').checked=!!d.contextualMode;
   document.getElementById('cfg-hist').checked=!!d.historyEnabled;
+  document.getElementById('cfg-ig').checked=!!d.ignoreGroups;
+  document.getElementById('cfg-sched').checked=!!d.scheduleEnabled;
+  document.getElementById('cfg-sched-s').value=d.scheduleStart||'22:00';
+  document.getElementById('cfg-sched-e').value=d.scheduleEnd||'07:00';
   if(d.version)document.getElementById('el-ver').textContent='v'+d.version;
 
   // Config — read-only
-  const cfgs=[['Language',d.language],['Timezone',d.timezone],['Away',d.awayMode?'ON':'OFF',d.awayMode],['Model',shortM(d.model)],['Style',d.style],['Max Tokens',d.maxTokens||'—'],['Schedule',d.scheduleEnabled?d.scheduleStart+' – '+d.scheduleEnd:'OFF',d.scheduleEnabled],['History Max',d.historyMax+' msgs'],['History TTL',d.historyAge+'m']];
+  const cfgs=[['Language',d.language],['Away',d.awayMode?'ON':'OFF',d.awayMode],['Model',shortM(d.model)],['Style',d.style],['Groq Keys',d.groqKeys+' key(s)'],['Gemini Keys',d.geminiKeys+' key(s)'],['History Max',d.historyMax+' msgs'],['History TTL',d.historyAge+'m']];
   document.getElementById('el-cfg').innerHTML=cfgs.map(([k,v,b])=>`<div class="cfg-item"><span class="k">${k}</span><span class="v ${b===true?'on':b===false?'off':''}">${v}</span></div>`).join('');
 
   // Groups
   const groups=d.groups||[];
   document.getElementById('el-grp-cnt').textContent=groups.length;
+  const igPill=document.getElementById('grp-ig-pill');
+  igPill.textContent=d.ignoreGroups?'Ignore Groups: ON':'Ignore Groups: OFF';
+  igPill.className='pill '+(d.ignoreGroups?'amber':'green');
   const gl=document.getElementById('el-groups');
-  if(!groups.length){gl.innerHTML='<div class="empty">No groups enabled</div>'}
-  else{gl.innerHTML=groups.map(g=>`<div class="row"><div class="ic-box ${g.enabled?'green':'red'}">${SVG.group}</div><div class="info"><div class="p">${esc(g.id)}</div><div class="s">Style: ${g.style||'default'}</div></div><div class="meta">${g.enabled?'\u25cf active':'\u25cb off'}</div></div>`).join('')}
+  if(!groups.length){gl.innerHTML='<div class="empty">No groups registered. Use <b>!group on</b> in a group chat.</div>'}
+  else{gl.innerHTML=groups.map(g=>`<div class="row"><div class="ic-box ${g.enabled?'green':'red'}">${SVG.group}</div><div class="info"><div class="p">${esc(g.id)}</div><div class="s">Style: ${g.style||'default'}</div></div><div class="meta"><label class="toggle"><input type="checkbox" ${g.enabled?'checked':''} onchange="toggleGroup('${g.id}',this.checked)"><span class="slider"></span></label></div></div>`).join('')}
 
   // Connection
   renderConn();
@@ -455,14 +473,25 @@ async function clearContacts(){if(!confirm('Clear contacts?'))return;await api('
 async function saveConfig(){
   const body={
     name:document.getElementById('cfg-name').value,
+    timezone:document.getElementById('cfg-tz').value,
     delay:document.getElementById('cfg-delay').value,
+    maxTokens:document.getElementById('cfg-tokens').value,
     maxReplies:document.getElementById('cfg-max').value,
     cooldown:document.getElementById('cfg-cool').value,
     contextual:document.getElementById('cfg-ctx').checked,
     history:document.getElementById('cfg-hist').checked,
+    ignoreGroups:document.getElementById('cfg-ig').checked,
+    scheduleEnabled:document.getElementById('cfg-sched').checked,
+    scheduleStart:document.getElementById('cfg-sched-s').value,
+    scheduleEnd:document.getElementById('cfg-sched-e').value,
   };
   const r=await post('/api/config',body);
-  toast('Config saved'+(r.changes?': '+r.changes.join(', '):''));
+  toast('Config saved'+(r.changes&&r.changes.length?': '+r.changes.join(', '):''));
+  refreshData();
+}
+async function toggleGroup(id,enabled){
+  await post('/api/groups/toggle',{id,enabled});
+  toast(`Group ${enabled?'ON':'OFF'}`);
   refreshData();
 }
 

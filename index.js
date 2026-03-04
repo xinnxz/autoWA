@@ -97,6 +97,7 @@ app.get('/api/stats', authDashboard, (req, res) => {
     maxReplies: config.safety.maxRepliesPerContact,
     cooldown: config.safety.cooldownPerContact,
     maxTokens: config.ai.maxTokens || 500,
+    ignoreGroups: config.safety.ignoreGroups,
     scheduleEnabled: config.awayMode.schedule?.enabled || false,
     scheduleStart: config.awayMode.schedule?.sleepStart || '',
     scheduleEnd: config.awayMode.schedule?.sleepEnd || '',
@@ -192,11 +193,46 @@ app.post('/api/config', authDashboard, (req, res) => {
   }
   if (history !== undefined) {
     if (config.ai.chatHistory) config.ai.chatHistory.enabled = !!history;
-    changes.push(`History → ${history ? 'ON' : 'OFF'}`);
+    changes.push(`History \u2192 ${history ? 'ON' : 'OFF'}`);
+  }
+  if (req.body.scheduleEnabled !== undefined) {
+    if (config.awayMode.schedule) config.awayMode.schedule.enabled = !!req.body.scheduleEnabled;
+    changes.push(`Schedule \u2192 ${req.body.scheduleEnabled ? 'ON' : 'OFF'}`);
+  }
+  if (req.body.scheduleStart) {
+    if (config.awayMode.schedule) config.awayMode.schedule.sleepStart = req.body.scheduleStart;
+    changes.push(`Schedule start \u2192 ${req.body.scheduleStart}`);
+  }
+  if (req.body.scheduleEnd) {
+    if (config.awayMode.schedule) config.awayMode.schedule.sleepEnd = req.body.scheduleEnd;
+    changes.push(`Schedule end \u2192 ${req.body.scheduleEnd}`);
+  }
+  if (req.body.timezone) {
+    config.timezone = req.body.timezone;
+    changes.push(`Timezone \u2192 ${req.body.timezone}`);
+  }
+  if (req.body.maxTokens !== undefined) {
+    const v = parseInt(req.body.maxTokens);
+    if (v >= 200 && v <= 4096) { config.ai.maxTokens = v; changes.push(`MaxTokens \u2192 ${v}`); }
+  }
+  if (req.body.ignoreGroups !== undefined) {
+    config.safety.ignoreGroups = !!req.body.ignoreGroups;
+    changes.push(`IgnoreGroups \u2192 ${req.body.ignoreGroups ? 'ON' : 'OFF'}`);
   }
 
   if (changes.length) logger.info(`[Dashboard] Config: ${changes.join(', ')}`);
   res.json({ ok: true, changes });
+});
+
+// ─── API: Control — Toggle group ───
+app.post('/api/groups/toggle', authDashboard, (req, res) => {
+  const { groupSettings } = require('./src/features/botControl');
+  const { id, enabled } = req.body;
+  if (!id) return res.json({ ok: false, error: 'Missing group id' });
+  if (!groupSettings[id]) groupSettings[id] = { enabled: false, style: null };
+  groupSettings[id].enabled = !!enabled;
+  logger.info(`[Dashboard] Group ${id}: ${enabled ? 'ON' : 'OFF'}`);
+  res.json({ ok: true });
 });
 
 // ─── API: Clear inbox ───
