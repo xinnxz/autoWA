@@ -327,22 +327,32 @@ app.get('/', async (req, res) => {
   if (isConnected) {
     res.send(`
       <html>
-      <head><title>AutoWA Bot</title>
+      <head><title>AutoWA — Connected</title>
       <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; 
-               display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: #1a1a2e; padding: 40px; border-radius: 16px; text-align: center; 
-                box-shadow: 0 8px 32px rgba(0,200,100,0.2); }
-        .status { font-size: 48px; margin-bottom: 16px; }
-        h2 { color: #00c853; margin: 0; }
-        p { color: #888; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a0a; color: #fff; 
+               display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .card { background: #111827; padding: 48px; border-radius: 20px; text-align: center; 
+                box-shadow: 0 0 40px rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.2); }
+        .check { width: 64px; height: 64px; border-radius: 50%; background: rgba(16,185,129,0.15);
+                 display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
+                 animation: pulse-green 2s ease infinite; }
+        .check svg { width: 32px; height: 32px; }
+        @keyframes pulse-green { 0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); } 50% { box-shadow: 0 0 0 16px rgba(16,185,129,0); } }
+        h2 { color: #10b981; font-size: 22px; margin-bottom: 8px; }
+        p { color: #6b7280; font-size: 14px; }
+        .uptime { color: #374151; font-size: 12px; margin-top: 16px; }
       </style></head>
       <body>
         <div class="card">
-          <div class="status">✅</div>
-          <h2>Bot Terhubung!</h2>
-          <p>WhatsApp sudah terkoneksi. Bot sedang berjalan.</p>
-          <p style="color:#555; font-size:12px;">Uptime: ${Math.floor(process.uptime())}s</p>
+          <div class="check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h2>Connected</h2>
+          <p>WhatsApp is linked and the bot is running.</p>
+          <p class="uptime">Uptime: ${Math.floor(process.uptime())}s</p>
         </div>
       </body></html>
     `);
@@ -352,21 +362,32 @@ app.get('/', async (req, res) => {
   if (!currentQR) {
     res.send(`
       <html>
-      <head><title>AutoWA Bot</title>
+      <head><title>AutoWA — Waiting</title>
       <meta http-equiv="refresh" content="3">
       <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; 
-               display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: #1a1a2e; padding: 40px; border-radius: 16px; text-align: center; }
-        .spinner { font-size: 48px; animation: spin 2s infinite; display: inline-block; }
-        @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
-        p { color: #888; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a0a; color: #fff; 
+               display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .card { background: #111827; padding: 48px 56px; border-radius: 20px; text-align: center; 
+                box-shadow: 0 0 40px rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.15); }
+        .loader { width: 48px; height: 48px; margin: 0 auto 24px; position: relative; }
+        .loader::before, .loader::after {
+          content: ''; position: absolute; border-radius: 50%;
+          inset: 0; border: 3px solid transparent;
+        }
+        .loader::before { border-top-color: #6366f1; animation: spin 1s linear infinite; }
+        .loader::after { border-top-color: #818cf8; inset: 6px; animation: spin 0.6s linear infinite reverse; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        h2 { color: #a5b4fc; font-size: 20px; margin-bottom: 8px; }
+        p { color: #6b7280; font-size: 14px; }
+        .dots::after { content: ''; animation: dots 1.5s steps(4) infinite; }
+        @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
       </style></head>
       <body>
         <div class="card">
-          <div class="spinner">⏳</div>
-          <h2>Menunggu QR Code...</h2>
-          <p>Halaman ini akan refresh otomatis.</p>
+          <div class="loader"></div>
+          <h2>Waiting for QR Code<span class="dots"></span></h2>
+          <p>This page will refresh automatically.</p>
         </div>
       </body></html>
     `);
@@ -382,32 +403,34 @@ app.get('/', async (req, res) => {
   
   res.send(`
     <html>
-    <head><title>AutoWA Bot — Scan QR</title>
+    <head><title>AutoWA — Scan QR</title>
     <style>
-      body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; 
-             display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-      .card { background: #1a1a2e; padding: 40px; border-radius: 16px; text-align: center; 
-              box-shadow: 0 8px 32px rgba(0,100,255,0.2); max-width: 400px; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a0a; color: #fff; 
+             display: flex; align-items: center; justify-content: center; height: 100vh; }
+      .card { background: #111827; padding: 40px; border-radius: 20px; text-align: center; 
+              box-shadow: 0 0 40px rgba(79,195,247,0.1); border: 1px solid rgba(79,195,247,0.15); max-width: 420px; }
       img { border-radius: 12px; margin: 16px 0; }
-      h2 { color: #4fc3f7; margin-bottom: 8px; }
-      p { color: #888; font-size: 14px; }
-      .timer { font-size: 32px; font-weight: bold; color: #4fc3f7; margin: 8px 0; }
-      .timer.warning { color: #ffa726; }
-      .timer.danger { color: #ef5350; }
-      .progress-bar { width: 100%; height: 4px; background: #333; border-radius: 2px; margin: 12px 0; overflow: hidden; }
-      .progress-fill { height: 100%; background: #4fc3f7; border-radius: 2px; transition: width 1s linear, background 1s; }
-      .progress-fill.warning { background: #ffa726; }
-      .progress-fill.danger { background: #ef5350; }
-      .expired { color: #ef5350; font-size: 18px; font-weight: bold; }
+      h2 { color: #4fc3f7; margin-bottom: 8px; font-size: 22px; }
+      p { color: #6b7280; font-size: 14px; }
+      .steps { color: #9ca3af; font-size: 13px; margin-bottom: 4px; }
+      .timer { font-size: 36px; font-weight: 700; color: #4fc3f7; margin: 8px 0; font-variant-numeric: tabular-nums; }
+      .timer.warning { color: #fbbf24; }
+      .timer.danger { color: #ef4444; }
+      .bar-bg { width: 100%; height: 4px; background: #1f2937; border-radius: 2px; margin: 12px 0; overflow: hidden; }
+      .bar-fill { height: 100%; background: #4fc3f7; border-radius: 2px; transition: width 1s linear, background 0.5s; }
+      .bar-fill.warning { background: #fbbf24; }
+      .bar-fill.danger { background: #ef4444; }
+      .label { color: #4b5563; font-size: 12px; }
     </style></head>
     <body>
       <div class="card">
         <h2>Scan QR Code</h2>
-        <p>Buka WhatsApp > Settings > Linked Devices > Link a Device</p>
+        <p class="steps">WhatsApp > Settings > Linked Devices > Link a Device</p>
         <img src="${qrImage}" alt="QR Code" />
         <div class="timer" id="timer">${remaining}</div>
-        <div class="progress-bar"><div class="progress-fill" id="bar" style="width:${(remaining/60*100).toFixed(1)}%"></div></div>
-        <p id="label">detik tersisa</p>
+        <div class="bar-bg"><div class="bar-fill" id="bar" style="width:${(remaining/60*100).toFixed(1)}%"></div></div>
+        <p class="label" id="label">seconds remaining</p>
       </div>
       <script>
         let sec = ${remaining};
@@ -418,9 +441,9 @@ app.get('/', async (req, res) => {
           sec--;
           if (sec <= 0) {
             timer.textContent = 'Expired';
-            timer.className = 'expired';
+            timer.className = 'timer danger';
             bar.style.width = '0%';
-            label.textContent = 'Halaman refresh otomatis...';
+            label.textContent = 'Refreshing...';
             setTimeout(() => location.reload(), 2000);
             return;
           }
@@ -428,10 +451,10 @@ app.get('/', async (req, res) => {
           bar.style.width = (sec / 60 * 100) + '%';
           if (sec <= 10) {
             timer.className = 'timer danger';
-            bar.className = 'progress-fill danger';
+            bar.className = 'bar-fill danger';
           } else if (sec <= 25) {
             timer.className = 'timer warning';
-            bar.className = 'progress-fill warning';
+            bar.className = 'bar-fill warning';
           }
         }, 1000);
       </script>
