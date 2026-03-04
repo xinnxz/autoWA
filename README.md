@@ -1,47 +1,83 @@
 <div align="center">
 
-# AutoWA Bot
+# AutoWA
 
-**Smart WhatsApp Auto-Reply Bot with AI**
+**WhatsApp Auto-Reply Bot — AI-Powered, Self-Hosted**
 
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Baileys](https://img.shields.io/badge/Baileys-WebSocket-25D366?style=flat-square&logo=whatsapp&logoColor=white)](https://github.com/WhiskeySockets/Baileys)
-[![Groq](https://img.shields.io/badge/Groq-AI_Engine-F55036?style=flat-square&logo=groq&logoColor=white)](https://groq.com)
+[![Groq](https://img.shields.io/badge/Groq-AI-F55036?style=flat-square&logo=groq&logoColor=white)](https://groq.com)
+[![Gemini](https://img.shields.io/badge/Gemini-Fallback-4285F4?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev)
 [![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)](LICENSE)
-[![Deploy](https://img.shields.io/badge/Deploy-Koyeb-4c4c4c?style=flat-square&logo=koyeb&logoColor=white)](https://www.koyeb.com)
+[![Deploy](https://img.shields.io/badge/Deploy-Koyeb-121212?style=flat-square&logo=koyeb&logoColor=white)](https://www.koyeb.com)
 
-Bot yang otomatis bales chat WhatsApp kamu pas lagi tidur, meeting, atau sibuk.<br>
-Pake AI biar balasannya nyambung dan natural — bukan template kaku.
+A bot that automatically replies to your WhatsApp messages when you're away.<br>
+Uses AI to generate contextual, human-like responses — not canned templates.
 
-[Cara Pakai](#cara-pakai) · [Deploy ke Cloud](#deploy-ke-cloud-koyeb) · [Commands](#bot-commands) · [AI & Gaya Bahasa](#ai--gaya-bahasa) · [Konfigurasi](#konfigurasi)
+[Setup](#setup) · [Deploy](#deploy) · [Dashboard](#web-dashboard) · [Commands](#commands) · [Configuration](#configuration) · [Project Structure](#project-structure)
 
 </div>
 
 ---
 
-## Fitur
+## Table of Contents
 
-| Fitur | Deskripsi |
-|-------|-----------|
-| **AI Contextual Reply** | AI bales sesuai isi chat, seolah kamu yang jawab |
-| **Context-Aware** | AI tau waktu, hari, event (Ramadan, hari besar), dan aktivitas kamu |
-| **Multi-Provider AI** | Groq (primary) + Gemini (fallback) dengan key rotation otomatis |
-| **Gaya Bahasa Custom** | Pilih: gaul, santai, formal, campur, atau tulis custom sendiri |
-| **DND Mode** | `!dnd 2h` — bot aktif 2 jam terus mati sendiri |
-| **On/Off Toggle** | Kontrol bot dari chat (`!on` / `!off`) |
-| **Inbox Summary** | Rangkuman siapa aja yang chat pas kamu away |
-| **Scheduled Away** | Otomatis aktif pas jam tidur |
-| **Keyword Auto-Reply** | Reply otomatis berdasarkan kata kunci tertentu |
-| **Anti-Ban Safety** | Delay, cooldown, ignore group — biar aman |
-| **Web QR Scanner** | Scan QR dari browser dengan countdown timer (buat cloud) |
-| **Auto Memory Cleanup** | Inbox dan tracker otomatis dibersihkan biar server ga penuh |
-| **Keep-Alive** | Anti-sleep untuk cloud hosting gratis |
+- [Features](#features)
+- [Requirements](#requirements)
+- [Setup](#setup)
+- [Deploy](#deploy)
+  - [Local (CLI)](#option-1--local-cli)
+  - [Koyeb (Cloud, Free)](#option-2--koyeb-cloud-free-tier)
+- [Web Dashboard](#web-dashboard)
+- [Commands](#commands)
+- [Configuration](#configuration)
+  - [Environment Variables](#environment-variables)
+  - [config.js Reference](#configjs-reference)
+  - [AI Providers](#ai-providers)
+  - [Languages](#languages)
+  - [Reply Styles](#reply-styles)
+- [Anti-Ban](#anti-ban)
+- [Project Structure](#project-structure)
+- [License](#license)
 
 ---
 
-## Cara Pakai
+## Features
 
-### 1. Clone repo
+| Category | Feature | Description |
+|----------|---------|-------------|
+| **Core** | AI Contextual Reply | Replies match the context of the incoming message |
+| | Away / DND Mode | Activate manually or on a schedule |
+| | Multi-Provider AI | Groq (primary) + Gemini (fallback), automatic key rotation |
+| | Chat History | AI remembers last 6 messages per contact for natural conversation |
+| | Owner-Only Commands | Full control via WhatsApp chat commands |
+| **Group** | Per-Group Control | Enable/disable bot and set custom styles per group |
+| | Sender Mention | Replies in groups mention the original sender |
+| **Dashboard** | 7-Page Web UI | Dashboard, Inbox, Logs, Contacts, Configuration, Groups, Connection |
+| | Live Controls | Toggle away, change model/style/language from the web |
+| | Real-Time Logs | Server-Sent Events log stream |
+| | Latency Chart | Canvas-rendered AI response time graph |
+| | Contact Tracker | Shows who messaged, how often, and when |
+| | QR Scanner | Scan WhatsApp QR directly from the dashboard |
+| | Theme Toggle | Dark and light mode |
+| **i18n** | 10 Languages | id, en, es, ar, pt, ja, hi, ko, fr, ms |
+| **Safety** | Anti-Ban | Reply delay, rate limiting, cooldown, group ignore |
+| | Keep-Alive | Self-pinging to prevent cloud hosting sleep |
+
+---
+
+## Requirements
+
+- **Node.js** 18 or higher — [download](https://nodejs.org)
+- **Groq API key** (free) — [console.groq.com/keys](https://console.groq.com/keys)
+- **Gemini API key** (optional, free) — [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+- A WhatsApp account to link
+
+---
+
+## Setup
+
+### Step 1 — Clone and install
 
 ```bash
 git clone https://github.com/xinnxz/autoWA.git
@@ -49,262 +85,538 @@ cd autoWA
 npm install
 ```
 
-### 2. Setup environment
+### Step 2 — Create environment file
 
 ```bash
 cp .env.example .env
 ```
 
-Buka file `.env`, isi yang ini:
+Open `.env` in any text editor and fill in your values:
 
 ```env
+# Required
 OWNER_NUMBER=628xxxxxxxxxx
-OWNER_NAME=NamaKamu
-GROQ_API_KEY_1=gsk_xxx
+OWNER_NAME=YourName
+
+# At least one AI key is required
+GROQ_API_KEY_1=gsk_your_key_here
+
+# Optional: add more keys for rotation (recommended)
+GROQ_API_KEY_2=gsk_your_second_key
+GROQ_API_KEY_3=gsk_your_third_key
+
+# Optional: Gemini as fallback
+GEMINI_API_KEY_1=AIza_your_key_here
+
+# Server port (default 3000)
+PORT=3000
 ```
 
-> API key Groq bisa dibuat gratis di [console.groq.com/keys](https://console.groq.com/keys).
-> Bisa isi banyak key buat rotasi (anti rate-limit).
+> **Where to get keys:**
+> - Groq: go to [console.groq.com/keys](https://console.groq.com/keys), sign in, create a key. Free tier allows ~30 requests/minute.
+> - Gemini: go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey), create a key. Free tier allows 60 requests/minute.
 
-### 3. Konfigurasi (opsional)
+### Step 3 — Configure (optional)
 
-Buka `config.js` — tiap setting udah ada comment penjelasannya. Yang paling penting:
+Open `config.js` and adjust settings. Every option has comments explaining what it does. Key settings:
 
 ```js
+language: "id",                   // Bot language (id, en, es, ar, pt, ja, hi, ko, fr, ms)
+
 ai: {
-  replyStyle: "santai",              // gaul, santai, formal, campur, atau custom
-  model: "openai/gpt-oss-120b",     // model AI di Groq
+  replyStyle: "santai",           // santai, formal, gaul, campur, or any custom string
+  model: "llama-3.3-70b-versatile", // Groq model
+  contextualMode: true,           // AI replies as if it's you
 }
 ```
 
-### 4. Jalankan
+### Step 4 — Run
 
 ```bash
 npm start
 ```
 
-Muncul QR code di terminal. Scan pake WhatsApp (Settings > Linked Devices > Link a Device). Selesai, bot jalan.
+A QR code appears in the terminal. Open WhatsApp on your phone, go to **Settings > Linked Devices > Link a Device**, and scan the code.
+
+The bot is now running. Send `!help` to yourself in WhatsApp to see available commands.
 
 ---
 
-## Deploy ke Cloud (Koyeb)
+## Deploy
 
-Kalo mau bot nya jalan terus walau PC mati, deploy ke Koyeb. Gratis.
+### Option 1 — Local (CLI)
 
-<details>
-<summary><b>Klik untuk lihat langkah deploy</b></summary>
+Run directly on your machine. Bot stops when you close the terminal.
 
-### Step 1 — Buat akun Koyeb
+```bash
+npm start
+```
 
-Buka [koyeb.com](https://www.koyeb.com), sign up. Verifikasi kartu (ditarik $1 terus langsung di-refund).
+To keep it running in the background:
 
-### Step 2 — Push repo ke GitHub
+```bash
+# Linux/Mac — using pm2
+npm install -g pm2
+pm2 start index.js --name autowa
+pm2 save
+pm2 startup    # auto-start on reboot
+
+# Windows — using pm2
+npm install -g pm2
+pm2 start index.js --name autowa
+```
+
+Access the dashboard at `http://localhost:3000/dashboard?key=YOUR_OWNER_NUMBER`.
+
+---
+
+### Option 2 — Koyeb (Cloud, Free Tier)
+
+Runs 24/7 without keeping your computer on. Koyeb has a free tier (no credit card required for the free instance).
+
+#### Prerequisites
+
+1. A [GitHub](https://github.com) account
+2. A [Koyeb](https://www.koyeb.com) account (sign up with GitHub)
+3. Your code pushed to a GitHub repository
+
+#### Step 1 — Push to GitHub
+
+If you haven't already:
 
 ```bash
 git init
 git add .
 git commit -m "initial commit"
-git remote add origin https://github.com/USERNAME/autoWA.git
+git remote add origin https://github.com/YOUR_USERNAME/autoWA.git
 git branch -M main
 git push -u origin main
 ```
 
-### Step 3 — Buat service di Koyeb
+> **Important:** Make sure `.env` and `auth_info/` are in `.gitignore`. Never push secrets to GitHub.
 
-1. Login ke [app.koyeb.com](https://app.koyeb.com)
-2. Klik **Create Service** > **Web service**
-3. Pilih **GitHub** > connect akun GitHub > pilih repo `autoWA`
-4. Branch: `main`
-5. Builder: **Buildpack** (default)
-6. Build/Run command: biarkan default
-7. Klik **Next**
+#### Step 2 — Install Koyeb CLI (recommended)
 
-### Step 4 — Isi Environment Variables
+The CLI gives you more control than the web UI.
 
-Tambahkan semua variable yang dibutuhin:
-
-```
-OWNER_NUMBER = 6281234567890
-OWNER_NAME = NamaKamu
-GROQ_API_KEY_1 = gsk_xxxxx
-GROQ_API_KEY_2 = gsk_xxxxx
+**macOS / Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/koyeb/koyeb-cli/master/install.sh | sh
 ```
 
-Isi semua Groq key. Minimal 1.
-
-Kalo punya Gemini key juga bisa ditambahin:
-
-```
-GEMINI_API_KEY_1 = AIzaxxxxx
+**Windows (PowerShell):**
+```powershell
+iwr -useb https://raw.githubusercontent.com/koyeb/koyeb-cli/master/install.ps1 | iex
 ```
 
-### Step 5 — Pilih instance
+**Or via npm (all platforms):**
+```bash
+npm install -g koyeb-cli
+```
 
-- Instance type: **Free** (Nano)
-- Region: terserah
-- Scaling: biarkan default
+Login:
+```bash
+koyeb login
+```
+This opens a browser. Authorize, done.
 
-### Step 6 — Deploy
+#### Step 3 — Create the service
 
-Klik **Deploy**. Tunggu 2-3 menit.
+Using the CLI, run one command to create and deploy:
 
-### Step 7 — Scan QR dari browser
+```bash
+koyeb service create autowa \
+  --app autowa \
+  --git github.com/YOUR_USERNAME/autoWA \
+  --git-branch main \
+  --instance-type free \
+  --port 3000:http \
+  --route /:3000 \
+  --env OWNER_NUMBER=628xxxxxxxxxx \
+  --env OWNER_NAME=YourName \
+  --env GROQ_API_KEY_1=gsk_xxx \
+  --env GROQ_API_KEY_2=gsk_xxx \
+  --env PORT=3000
+```
 
-1. Koyeb kasih URL publik (contoh: `https://autowa-xxxxx.koyeb.app`)
-2. Buka URL itu di browser — muncul QR code dengan countdown timer
-3. Scan pake WhatsApp
-4. Halaman berubah jadi "Bot Terhubung"
+> **Windows users:** replace `\` with `` ` `` (backtick) for line continuation in PowerShell, or put everything on one line.
 
-Selesai. Bot jalan 24/7.
+Add more env vars as needed:
+```bash
+  --env GEMINI_API_KEY_1=AIza_xxx \
+  --env GROQ_API_KEY_3=gsk_xxx
+```
 
-> Kalau Koyeb restart, tinggal buka URL lagi dan scan ulang. Bot tetap running, cuma perlu re-pair aja.
+#### Step 4 — Wait for build
 
-</details>
+Monitor the deployment:
+```bash
+koyeb service get autowa --app autowa
+```
+
+Or watch logs:
+```bash
+koyeb service logs autowa --app autowa
+```
+
+Build takes 2-3 minutes. Once status shows `HEALTHY`, proceed.
+
+#### Step 5 — Get your URL
+
+```bash
+koyeb app get autowa
+```
+
+This shows your public URL, for example: `https://autowa-YOUR_USERNAME.koyeb.app`
+
+#### Step 6 — Scan QR code
+
+Open `https://YOUR_URL/` in a browser. A QR code with a countdown timer appears. Scan it with WhatsApp.
+
+Or use the dashboard:
+```
+https://YOUR_URL/dashboard?key=YOUR_OWNER_NUMBER
+```
+Navigate to **Connection** in the sidebar to scan from there.
+
+#### Step 7 — Verify
+
+Send `!status` to yourself in WhatsApp. If the bot replies, everything works.
+
+#### Updating
+
+After code changes, push and redeploy:
+
+```bash
+git add .
+git commit -m "update"
+git push
+koyeb service redeploy autowa --app autowa
+```
+
+#### Alternative: Deploy via Koyeb Web UI
+
+If you prefer not to use the CLI:
+
+1. Go to [app.koyeb.com](https://app.koyeb.com)
+2. Click **Create Service** > **Web Service**
+3. Select **GitHub**, connect your account, choose the `autoWA` repo
+4. Set branch to `main`, builder to **Buildpack**
+5. Add environment variables (same as above)
+6. Choose **Free** instance type
+7. Click **Deploy**
 
 ---
 
-## Bot Commands
+## Web Dashboard
 
-Kirim dari chat ke diri sendiri di WhatsApp:
+The dashboard provides a full control panel accessible from any browser.
 
-| Command | Fungsi |
+**Access:** `https://YOUR_URL/dashboard?key=YOUR_OWNER_NUMBER`
+
+The `key` parameter is your `OWNER_NUMBER` from the `.env` file. Without it, the dashboard returns 401.
+
+### Pages
+
+| Page | What it shows |
+|------|---------------|
+| **Dashboard** | Stats (uptime, inbox count, AI calls, contacts), activity feed, latency chart, control bar |
+| **Inbox** | Messages received while in away mode |
+| **Logs** | Real-time server log stream (SSE) |
+| **Contacts** | List of people who messaged the bot, with message count and last seen |
+| **Configuration** | Current config values (read-only view) |
+| **Groups** | Enabled groups and their settings |
+| **Connection** | QR code scanner for WhatsApp linking |
+
+### Controls
+
+From the Dashboard page toolbar:
+
+| Control | Action |
 |---------|--------|
-| `!help` | Tampilkan daftar command |
-| `!off` | Aktifkan away mode (bot mulai reply) |
-| `!on` | Matikan away mode (bot diam) |
-| `!dnd 2h` | Away mode 2 jam, mati otomatis |
-| `!dnd 30m` | Away mode 30 menit |
-| `!status` | Cek status bot sekarang |
-| `!inbox` | Lihat rangkuman chat masuk pas away |
-| `!inbox clear` | Hapus inbox |
-| `!ai <pertanyaan>` | Tanya AI langsung |
-| `!logout` | Logout dari WhatsApp (perlu scan QR ulang) |
+| **Away toggle** | Switch away mode on/off |
+| **Style dropdown** | Change reply style (santai, formal, gaul, etc.) |
+| **Model dropdown** | Change AI model at runtime |
+| **Language dropdown** | Switch bot language (10 options) |
+| **Clear History** | Wipe AI conversation memory |
+| **Refresh** | Force data reload |
 
-> Commands cuma bisa dijalankan oleh owner.
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `D` | Dashboard |
+| `I` | Inbox |
+| `L` | Logs |
+| `C` | Contacts |
+| `S` | Configuration |
+| `G` | Groups |
+| `Q` | Connection |
+| `R` | Refresh data |
+
+### API Endpoints
+
+All endpoints require `?key=OWNER_NUMBER`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/dashboard` | Dashboard HTML page |
+| `GET` | `/api/stats` | All bot data (JSON) |
+| `POST` | `/api/away` | Toggle away mode — body: `{ "action": "on" }` or `{ "action": "off" }` |
+| `POST` | `/api/style` | Change style — body: `{ "style": "formal" }` |
+| `POST` | `/api/model` | Change model — body: `{ "model": "llama-3.3-70b-versatile" }` |
+| `POST` | `/api/language` | Change language — body: `{ "lang": "en" }` |
+| `GET` | `/api/inbox/clear` | Clear inbox |
+| `GET` | `/api/history/clear` | Clear chat history |
+| `GET` | `/api/logs/stream` | SSE log stream |
+| `GET` | `/api/qr` | QR code data (JSON) |
+| `GET` | `/health` | Health check (no auth) |
 
 ---
 
-## AI & Gaya Bahasa
+## Commands
 
-### Model AI
+Send commands to **yourself** in WhatsApp (personal chat). Only the owner can execute commands.
 
-Bot pake 2 provider AI dengan sistem fallback otomatis:
+### General
+
+| Command | Description |
+|---------|-------------|
+| `!help` | Show all available commands |
+| `!status` | Current bot status |
+| `!on` | Deactivate away mode (bot stops replying) |
+| `!off` | Activate away mode (bot starts replying) |
+| `!dnd 2h` | Activate away mode for 2 hours, then auto-deactivate |
+| `!dnd 30m` | Activate away mode for 30 minutes |
+
+### Inbox
+
+| Command | Description |
+|---------|-------------|
+| `!inbox` | Show messages received while away |
+| `!inbox clear` | Clear the inbox |
+
+### AI
+
+| Command | Description |
+|---------|-------------|
+| `!ai <question>` | Ask the AI directly and get a response |
+| `!style <name>` | Change reply style (santai, formal, gaul, campur, or any text) |
+| `!model <name>` | Change AI model (e.g., `!model llama-3.3-70b-versatile`) |
+| `!history clear` | Clear AI conversation memory |
+
+### Group
+
+| Command | Description |
+|---------|-------------|
+| `!group on` | Enable bot in current group |
+| `!group off` | Disable bot in current group |
+| `!group style <name>` | Set custom reply style for the group |
+| `!group list` | Show all active groups |
+| `!group reset` | Disable bot in all groups |
+
+### System
+
+| Command | Description |
+|---------|-------------|
+| `!logout` | Disconnect WhatsApp (requires re-scan) |
+
+---
+
+## Configuration
+
+### Environment Variables
+
+Defined in `.env`. Copy from `.env.example` to get started.
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OWNER_NUMBER` | Yes | Your WhatsApp number in international format without `+` (e.g., `6281234567890`) |
+| `OWNER_NAME` | Yes | Your name, used in AI prompts |
+| `GROQ_API_KEY_1` | Yes | Groq API key. Get from [console.groq.com/keys](https://console.groq.com/keys) |
+| `GROQ_API_KEY_2..N` | No | Additional Groq keys for rotation |
+| `GEMINI_API_KEY_1` | No | Gemini API key (fallback). Get from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| `GEMINI_API_KEY_2..N` | No | Additional Gemini keys for rotation |
+| `PORT` | No | Server port. Default: `3000` |
+
+### config.js Reference
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `language` | `"id"` | Bot language. See [Languages](#languages) |
+| `ai.replyStyle` | `"santai"` | Reply tone. See [Reply Styles](#reply-styles) |
+| `ai.model` | `"llama-3.3-70b-versatile"` | Groq model name |
+| `ai.geminiModel` | `"gemini-2.5-flash"` | Gemini fallback model |
+| `ai.contextualMode` | `true` | AI generates replies as if it's the owner |
+| `ai.maxTokens` | `500` | Maximum AI response length |
+| `ai.chatHistory.enabled` | `true` | Remember conversation context |
+| `ai.chatHistory.maxMessages` | `6` | Messages to remember per contact |
+| `ai.chatHistory.maxAge` | `30` | History TTL in minutes |
+| `awayMode.enabled` | `true` | Start with away mode on |
+| `awayMode.schedule.enabled` | `false` | Auto-activate on schedule |
+| `awayMode.schedule.sleepStart` | `"22:00"` | Schedule start time |
+| `awayMode.schedule.sleepEnd` | `"07:00"` | Schedule end time |
+| `safety.replyDelay` | `2000` | Delay before replying (ms) |
+| `safety.maxRepliesPerContact` | `3` | Max replies per contact per cooldown |
+| `safety.cooldownPerContact` | `300` | Cooldown period in seconds |
+| `safety.ignoreGroups` | `true` | Ignore group messages by default |
+| `cleanup.maxInbox` | `100` | Max inbox messages before auto-cleanup |
+| `cleanup.inboxMaxAge` | `24` | Delete inbox messages after N hours |
+| `keepAlive.enabled` | `true` | Self-ping to prevent sleep |
+| `keepAlive.intervalMinutes` | `4` | Ping interval |
+
+### AI Providers
+
+The bot uses a fallback chain:
 
 ```
-Groq (primary) → Gemini (fallback) → Template message (last resort)
+Groq (all keys) -> Gemini (all keys) -> Template message
 ```
 
-Model bisa diganti di `config.js`:
+Within each provider, keys are rotated round-robin. If one key hits a rate limit, the next key is tried automatically.
 
-```js
-model: "openai/gpt-oss-120b",       // Groq — paling pintar
-geminiModel: "gemini-2.5-flash",     // Gemini — fallback terbaru
-```
+**Recommended setup:** 3 Groq keys + 1-2 Gemini keys. This gives high availability with zero downtime.
 
-### Key Rotation
+Available Groq models:
 
-Bisa isi banyak API key. Kalo satu kena rate limit, otomatis pindah ke berikutnya:
+| Model | Description |
+|-------|-------------|
+| `llama-3.3-70b-versatile` | Best all-around, recommended |
+| `llama-3.1-8b-instant` | Faster, less capable |
+| `openai/gpt-oss-120b` | Largest open model |
+| `openai/gpt-oss-20b` | Smaller variant |
+| `qwen/qwen3-32b` | Alibaba model |
+| `moonshotai/kimi-k2-instruct` | Moonshot, good at reasoning |
+| `meta-llama/llama-4-maverick-17b-128e-instruct` | Llama 4 Maverick |
+| `meta-llama/llama-4-scout-17b-16e-instruct` | Llama 4 Scout |
 
-```env
-GROQ_API_KEY_1=gsk_xxx
-GROQ_API_KEY_2=gsk_xxx
-GROQ_API_KEY_3=gsk_xxx
-GEMINI_API_KEY_1=AIza_xxx
-```
+### Languages
 
-### Gaya Bahasa
+Set `language` in `config.js` or change via dashboard/command.
 
-Setiap user bisa pilih gaya bahasa sesuai kepribadian di `config.js`:
+| Code | Language |
+|------|----------|
+| `id` | Bahasa Indonesia |
+| `en` | English |
+| `es` | Espanol |
+| `ar` | Arabic |
+| `pt` | Portugues |
+| `ja` | Japanese |
+| `hi` | Hindi |
+| `ko` | Korean |
+| `fr` | Francais |
+| `ms` | Bahasa Melayu |
 
-| Style | Contoh |
+Each language has full translations for all bot responses, system messages, and help text. Locale files are in `locales/`.
+
+### Reply Styles
+
+| Style | Effect |
 |-------|--------|
-| `"gaul"` | "woy maap bro lg gabisa bales nih wkwk 😂" |
-| `"santai"` | "heyy sorry lg ga bisa bales, ntar gw chat ya" |
-| `"formal"` | "Mohon maaf, saat ini saya belum dapat membalas." |
-| `"campur"` | "Sorry ya belum bisa bales, ntar saya info lagi" |
-| Custom | Tulis apa aja: `"bahasa sunda"`, `"english casual"`, dll |
+| `santai` | Casual, relaxed tone |
+| `formal` | Professional, polite |
+| `gaul` | Slang, very informal |
+| `campur` | Mixed formal/informal |
+| Any string | Custom — AI interprets your description as a persona |
 
-```js
-replyStyle: "santai",    // ganti sesuai selera
-```
-
-### Context-Aware
-
-AI otomatis tau situasi tanpa perlu diketik manual:
-- Waktu dan hari (pagi/siang/malam, weekday/weekend)
-- Event dan hari besar (Ramadan, 17 Agustus, Natal, dll)
-- Kemungkinan aktivitas (kerja, istirahat, ngoding, olahraga)
-- Jawaban bervariasi dan tidak monoton
-
----
-
-## Konfigurasi
-
-Semua setting ada di `config.js` — tiap baris udah ada comment penjelasannya:
-
-| Setting | Deskripsi | Default |
-|---------|-----------|---------|
-| `ai.replyStyle` | Gaya bahasa AI | `"santai"` |
-| `ai.model` | Model AI di Groq | `"openai/gpt-oss-120b"` |
-| `ai.geminiModel` | Model Gemini (fallback) | `"gemini-2.5-flash"` |
-| `ai.contextualMode` | AI reply seolah kamu | `true` |
-| `ai.maxTokens` | Max panjang jawaban AI | `500` |
-| `awayMode.enabled` | Away mode saat start | `true` |
-| `awayMode.schedule` | Jam away otomatis | `22:00 - 07:00` |
-| `safety.replyDelay` | Delay sebelum reply | `2000ms` |
-| `safety.maxRepliesPerContact` | Max reply per kontak | `3` |
-| `safety.cooldownPerContact` | Cooldown per kontak | `300s` |
-| `cleanup.maxInbox` | Max pesan di inbox | `100` |
-| `cleanup.inboxMaxAge` | Hapus inbox > X jam | `24` |
-| `keepAlive.enabled` | Anti-sleep cloud | `true` |
-| `keepAlive.intervalMinutes` | Interval ping | `4` |
+Custom example: set style to `"british english with dry humor"` or `"bahasa sunda halus"` — the AI will follow that instruction.
 
 ---
 
 ## Anti-Ban
 
-- Bot cuma reply, ga pernah kirim chat duluan
-- Group chat diabaikan
-- Max 3 reply per kontak per 5 menit
-- Ada delay sebelum reply
-- Jangan broadcast ke banyak nomor
-- Jangan spam link atau promosi
+WhatsApp may flag accounts that behave like bots. This bot includes several safety mechanisms:
+
+- **Reply delay** — waits 2 seconds before responding (configurable)
+- **Rate limiting** — max 3 replies per contact per 5 minutes
+- **Cooldown** — contacts are blocked for 5 minutes after hitting the limit
+- **No broadcast** — bot only replies, never initiates contact
+- **Group isolation** — groups are ignored by default (opt-in via `!group on`)
+- **Human-like responses** — AI generates varied, natural text
+
+**Additional recommendations:**
+- Do not use on newly created WhatsApp numbers
+- Do not forward or broadcast messages
+- Do not send links or promotional content through the bot
+- Keep your average daily message volume reasonable
 
 ---
 
-## Struktur Project
+## Project Structure
 
 ```
 autoWA/
-├── index.js                  # entry point + web QR scanner
-├── config.js                 # konfigurasi bot (ada comment lengkap)
-├── .env                      # API keys (jangan commit)
-├── .env.example              # template .env
-├── LICENSE                   # GPL-3.0
-├── src/
-│   ├── connection.js         # koneksi WhatsApp (Baileys)
-│   ├── handler.js            # handler pesan masuk + anti-spam
-│   ├── features/
-│   │   ├── aiReply.js        # AI reply (Groq + Gemini, key rotation)
-│   │   └── botControl.js     # command bot (!help, !on, !off, dll)
-│   └── utils/
-│       └── logger.js         # logger
-├── auth_info/                # session WA (jangan commit)
-└── package.json
+|-- index.js                    # Entry point, Express server, API endpoints, dashboard
+|-- config.js                   # All configuration with inline documentation
+|-- .env                        # API keys and secrets (not committed)
+|-- .env.example                # Template for .env
+|-- package.json
+|-- LICENSE                     # GPL-3.0
+|
+|-- src/
+|   |-- connection.js           # Baileys WhatsApp connection handler
+|   |-- handler.js              # Incoming message handler, anti-spam, routing
+|   |
+|   |-- features/
+|   |   |-- aiReply.js          # AI response generation, provider rotation, metrics
+|   |   |-- botControl.js       # Command handler, state management, group settings
+|   |   |-- autoReply.js        # Keyword-based auto-reply rules
+|   |   |-- faq.js              # FAQ response database
+|   |   |-- broadcast.js        # Broadcast utilities
+|   |   |-- order.js            # Order-related features
+|   |   +-- welcome.js          # Welcome message handler
+|   |
+|   |-- utils/
+|   |   |-- logger.js           # Logging with SSE broadcast
+|   |   |-- locale.js           # Language/locale loader
+|   |   |-- contacts.js         # Contact tracking module
+|   |   +-- adminCmd.js         # Admin command utilities
+|   |
+|   +-- web/
+|       +-- dashboard.html      # Dashboard UI (single-file, no build step)
+|
+|-- locales/
+|   |-- id.js                   # Bahasa Indonesia
+|   |-- en.js                   # English
+|   |-- es.js                   # Espanol
+|   |-- ar.js                   # Arabic
+|   |-- pt.js                   # Portugues
+|   |-- ja.js                   # Japanese
+|   |-- hi.js                   # Hindi
+|   |-- ko.js                   # Korean
+|   |-- fr.js                   # Francais
+|   |-- ms.js                   # Bahasa Melayu
+|   +-- _template.js            # Template for adding new languages
+|
++-- auth_info/                  # WhatsApp session data (not committed)
 ```
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| QR code expired | Refresh the page or restart the bot. QRs expire after 60 seconds. |
+| Bot not replying | Check `!status`. Make sure away mode is on (`!off` activates it). |
+| "No API key" warning | Add at least one `GROQ_API_KEY_*` or `GEMINI_API_KEY_*` to `.env`. |
+| Rate limit errors | Add more API keys. Each Groq key allows ~30 req/min. |
+| Dashboard 401 | Make sure `?key=` matches your `OWNER_NUMBER` exactly. |
+| Session lost after restart | Normal on cloud. Open the URL and scan QR again. |
+| Port already in use | Change `PORT` in `.env` or stop the other process. |
 
 ---
 
 ## License
 
-[GPL-3.0](LICENSE) — boleh dipake dan dimodif, tapi wajib credit author asli dan tetep open source.
+[GPL-3.0](LICENSE) — free to use and modify. Must credit the original author and keep it open source.
 
-Copyright (c) 2026 Luthfi ([xinnxz](https://github.com/xinnxz))
+Copyright (c) 2026 [xinnxz](https://github.com/xinnxz)
 
 ---
 
 <div align="center">
 
-**Disclaimer** — Bot ini buat pemakaian pribadi. Kalo dipake buat spam atau ngelanggar ToS WhatsApp, itu tanggung jawab kamu sendiri.
+**Disclaimer** — This bot is for personal use. Misuse that violates WhatsApp's Terms of Service is the user's responsibility.
 
 </div>
