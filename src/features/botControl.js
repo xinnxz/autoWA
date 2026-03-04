@@ -86,7 +86,7 @@ function isAway() {
       // DND sudah expired → matikan
       botState.dndUntil = null;
       botState.dndTimer = null;
-      logger.info('⏰ DND berakhir! Away mode kembali ke setting awal.');
+      logger.info('⏰ DND expired! Away mode reverted to default.');
     }
   }
   return botState.awayMode;
@@ -222,46 +222,47 @@ ${L.helpFooter(currentStyle, currentModel)}`;
     botState.dndTimer = setTimeout(() => {
       botState.dndUntil = null;
       botState.dndTimer = null;
-      botState.awayMode = config.awayMode.enabled; // Kembali ke default
-      logger.info('DND berakhir!');
+      botState.awayMode = config.awayMode.enabled;
+      logger.info('DND expired!');
       store.save();
     }, duration);
 
-    const endTime = new Date(Date.now() + duration).toLocaleTimeString('id-ID', { 
-      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' 
+    const tz = config.timezone || 'Asia/Jakarta';
+    const endTime = new Date(Date.now() + duration).toLocaleTimeString('en-US', { 
+      hour: '2-digit', minute: '2-digit', timeZone: tz 
     });
 
     await sock.sendMessage(msg.from, { 
-      text: `🔇 *DND Mode AKTIF!*\n\n⏱️ Durasi: ${args}\n⏰ Berakhir: ${endTime} WIB` 
+      text: `🔇 *DND Mode ON!*\n\n⏱️ Duration: ${args}\n⏰ Ends: ${endTime}` 
     });
-    logger.info(`DND aktif selama ${args} (sampai ${endTime})`);
+    logger.info(`DND active for ${args} (until ${endTime})`);
     return true;
   }
 
   // ─── !status → Lihat status bot ───
   if (text === '!status') {
-    const awayStatus = isAway() ? '🔴 AWAY (aktif reply)' : '🟢 ONLINE (diam)';
+    const awayStatus = isAway() ? '🔴 AWAY (auto-reply active)' : '🟢 ONLINE (silent)';
     let dndInfo = '';
     if (botState.dndUntil) {
       const remaining = Math.ceil((botState.dndUntil - Date.now()) / 60000);
-      dndInfo = `\n│ DND: ${remaining} menit tersisa`;
+      dndInfo = `\n│ DND: ${remaining} minutes remaining`;
     }
 
     const memMB = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1);
     const schedule = config.awayMode.schedule;
     const scheduleStr = schedule.enabled 
       ? `${schedule.sleepStart} - ${schedule.sleepEnd} ${schedule.timezone}` 
-      : 'Nonaktif';
+      : 'Disabled';
 
     await sock.sendMessage(msg.from, { 
-      text: `📊 *Status AutoWA Bot*\n\n` +
+      text: `📊 *AutoWA Bot Status*\n\n` +
         `│ Status: ${awayStatus}${dndInfo}\n` +
         `│ Owner: ${ownerName}\n` +
-        `│ Inbox: ${inbox.length} pesan\n` +
+        `│ Inbox: ${inbox.length} messages\n` +
         `│ Memory: ${memMB} MB\n` +
         `│ Uptime: ${formatUptime(process.uptime())}\n` +
         `│ Schedule: ${scheduleStr}\n\n` +
-        `_Ketik !help untuk semua command_`
+        `_Type !help for all commands_`
     });
     return true;
   }
@@ -362,12 +363,12 @@ ${L.helpFooter(currentStyle, currentModel)}`;
     }
 
     if (inbox.length === 0) {
-      await sock.sendMessage(msg.from, { text: '📭 Inbox kosong! Belum ada chat masuk saat away.' });
+      await sock.sendMessage(msg.from, { text: '📭 Inbox empty! No messages received while away.' });
       return true;
     }
 
     // Format inbox summary
-    let summary = `📬 *Inbox Summary (${inbox.length} pesan)*\n\n`;
+    let summary = `📬 *Inbox Summary (${inbox.length} messages)*\n\n`;
     
     // Group by contact
     const grouped = {};
@@ -379,17 +380,17 @@ ${L.helpFooter(currentStyle, currentModel)}`;
     }
 
     for (const [num, data] of Object.entries(grouped)) {
-      summary += `👤 *${data.name}* (${num}) — ${data.messages.length} pesan\n`;
-      // Tampilkan max 3 pesan terakhir per kontak
+      summary += `👤 *${data.name}* (${num}) — ${data.messages.length} messages\n`;
+      // Show max 3 recent messages per contact
       const recent = data.messages.slice(-3);
       for (const m of recent) {
-        const time = m.time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        const time = m.time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         summary += `   ${time} — ${m.text}\n`;
       }
       summary += '\n';
     }
 
-    summary += `_Ketik *!inbox clear* untuk hapus_`;
+    summary += `_Type *!inbox clear* to delete_`;
     await sock.sendMessage(msg.from, { text: summary });
     return true;
   }
@@ -473,14 +474,14 @@ ${L.helpFooter(currentStyle, currentModel)}`;
 
     // Sisa command harus di group
     if (!groupId) {
-      await sock.sendMessage(msg.from, { text: '❌ Command ini harus diketik di dalam group.\n\nDari private bisa: *!group list*, *!group reset*' });
+      await sock.sendMessage(msg.from, { text: '❌ This command must be used inside a group.\n\nFrom private chat: *!group list*, *!group reset*' });
       return true;
     }
 
     // !group on
     if (args === 'on') {
       groupSettings[groupId] = { enabled: true, style: groupSettings[groupId]?.style || null };
-      await sock.sendMessage(msg.from, { text: '✅ Bot aktif di group ini!\n\nBot akan reply pesan saat away mode.' });
+      await sock.sendMessage(msg.from, { text: '✅ Bot enabled in this group!\n\nBot will reply to messages while in away mode.' });
       logger.info(`Group ON: ${groupId}`);
       return true;
     }
@@ -489,7 +490,7 @@ ${L.helpFooter(currentStyle, currentModel)}`;
     if (args === 'off') {
       if (groupSettings[groupId]) groupSettings[groupId].enabled = false;
       else groupSettings[groupId] = { enabled: false, style: null };
-      await sock.sendMessage(msg.from, { text: '🔇 Bot dimatikan di group ini.' });
+      await sock.sendMessage(msg.from, { text: '🔇 Bot disabled in this group.' });
       logger.info(`Group OFF: ${groupId}`);
       return true;
     }
@@ -498,21 +499,21 @@ ${L.helpFooter(currentStyle, currentModel)}`;
     if (args.startsWith('style')) {
       const styleName = args.replace('style', '').trim();
       if (!styleName) {
-        const currentStyle = groupSettings[groupId]?.style || 'default (mengikuti config)';
+        const currentStyle = groupSettings[groupId]?.style || 'default (follows config)';
         const presets = getStylePresets();
         await sock.sendMessage(msg.from, {
-          text: `🎨 *Group Style*\n\nAktif: *${currentStyle}*\n\nPilihan:\n${presets.map(s => `│ !group style ${s}`).join('\n')}\n│ !group style reset`
+          text: `🎨 *Group Style*\n\nActive: *${currentStyle}*\n\nOptions:\n${presets.map(s => `│ !group style ${s}`).join('\n')}\n│ !group style reset`
         });
         return true;
       }
       if (styleName === 'reset') {
         if (groupSettings[groupId]) groupSettings[groupId].style = null;
-        await sock.sendMessage(msg.from, { text: '✅ Group style direset ke default.' });
+        await sock.sendMessage(msg.from, { text: '✅ Group style reset to default.' });
         return true;
       }
       if (!groupSettings[groupId]) groupSettings[groupId] = { enabled: true, style: null };
       groupSettings[groupId].style = styleName;
-      await sock.sendMessage(msg.from, { text: `✅ Group style diubah ke: *${styleName}*` });
+      await sock.sendMessage(msg.from, { text: `✅ Group style changed to: *${styleName}*` });
       logger.info(`Group style ${groupId}: ${styleName}`);
       return true;
     }
@@ -520,14 +521,14 @@ ${L.helpFooter(currentStyle, currentModel)}`;
     // !group (tanpa args) — status group ini
     if (!args) {
       if (!groupId) {
-        await sock.sendMessage(msg.from, { text: '❌ Ketik di dalam group, atau gunakan *!group list*' });
+        await sock.sendMessage(msg.from, { text: '❌ Type this inside a group, or use *!group list*' });
         return true;
       }
       const gs = groupSettings[groupId];
-      const status = gs?.enabled ? '🟢 Aktif' : '🔴 Nonaktif';
+      const status = gs?.enabled ? '🟢 Active' : '🔴 Disabled';
       const style = gs?.style || 'default';
       await sock.sendMessage(msg.from, {
-        text: `📋 *Group Status*\n\n│ Status: ${status}\n│ Style: ${style}\n\n*Commands:*\n│ !group on — aktifkan\n│ !group off — matikan\n│ !group style <style> — set style\n│ !group list — list semua group\n│ !group reset — matikan semua`
+        text: `📋 *Group Status*\n\n│ Status: ${status}\n│ Style: ${style}\n\n*Commands:*\n│ !group on — enable\n│ !group off — disable\n│ !group style <style> — set style\n│ !group list — list all groups\n│ !group reset — disable all`
       });
       return true;
     }

@@ -13,7 +13,7 @@ module.exports = {
   //          "pt" (Português), "ja" (日本語), "hi" (हिन्दी), "ko" (한국어),
   //          "fr" (Français), "ms" (Bahasa Melayu)
   // Atau tambah bahasa baru di folder locales/
-  language: "id",
+  language: "en",
 
   // Timezone untuk deteksi waktu (format IANA)
   // Contoh: "Asia/Jakarta", "America/New_York", "Europe/London", "Asia/Tokyo"

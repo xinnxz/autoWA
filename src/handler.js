@@ -120,6 +120,11 @@ async function handleMessage(sock, msg) {
     if (isOwner && msg.text.startsWith('!')) {
       const handled = await handleCommand(sock, msg);
       if (handled) return;
+      // Fallback: !ai command (not in handleCommand)
+      if (msg.text.startsWith(config.ai.prefix)) {
+        await aiReply.handle(sock, msg);
+        return;
+      }
     }
 
     // Cek apakah group ini di-enable
