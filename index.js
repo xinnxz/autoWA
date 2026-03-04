@@ -135,6 +135,7 @@ app.post('/api/away', authDashboard, (req, res) => {
     botState.dndUntil = null;
     logger.info('[Dashboard] Away mode OFF');
   }
+  store.save();
   res.json({ ok: true, awayMode: botState.awayMode });
 });
 
@@ -143,7 +144,8 @@ app.post('/api/style', authDashboard, (req, res) => {
   const { runtimeOverrides } = require('./src/features/botControl');
   const { style } = req.body;
   runtimeOverrides.replyStyle = style || null;
-  logger.info(`[Dashboard] Style → ${style || 'default'}`);
+  logger.info(`[Dashboard] Style -> ${style || 'default'}`);
+  store.save();
   res.json({ ok: true, style: runtimeOverrides.replyStyle });
 });
 
@@ -152,7 +154,8 @@ app.post('/api/model', authDashboard, (req, res) => {
   const { runtimeOverrides } = require('./src/features/botControl');
   const { model } = req.body;
   runtimeOverrides.model = model || null;
-  logger.info(`[Dashboard] Model → ${model || 'default'}`);
+  logger.info(`[Dashboard] Model -> ${model || 'default'}`);
+  store.save();
   res.json({ ok: true, model: runtimeOverrides.model });
 });
 
@@ -166,7 +169,11 @@ app.post('/api/language', authDashboard, (req, res) => {
   config.language = lang;
   // Reset locale cache
   try { delete require.cache[require.resolve('./src/utils/locale')]; } catch(e) {}
-  logger.info(`[Dashboard] Language \u2192 ${lang}`);
+  // Persist language change
+  const co = store._getConfigOverrides();
+  co.language = lang;
+  store.save();
+  logger.info(`[Dashboard] Language -> ${lang}`);
   res.json({ ok: true, language: lang });
 });
 
@@ -485,8 +492,8 @@ async function start() {
     // AI key check
     const hasGroq = process.env.GROQ_API_KEY_1 || process.env.GROQ_API_KEY;
     const hasGemini = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
-    if (hasGroq) logger.info('Groq API configured ✅');
-    if (hasGemini) logger.info('Gemini API configured ✅');
+    if (hasGroq) logger.info('Groq API configured');
+    if (hasGemini) logger.info('Gemini API configured');
     if (!hasGroq && !hasGemini) {
       logger.warn('Tidak ada API key AI (Groq/Gemini). Fitur AI contextual tidak aktif.');
     }
@@ -507,10 +514,7 @@ if (config.keepAlive?.enabled !== false) {
 }
 
 // ─── Graceful Shutdown ───
-process.on('SIGINT', () => {
-  logger.info('Bot shutting down...');
-  process.exit(0);
-});
+// Graceful Shutdown handled by store.js (SIGINT -> save state -> exit)
 
 process.on('uncaughtException', (err) => {
   logger.error('Uncaught Exception', err);

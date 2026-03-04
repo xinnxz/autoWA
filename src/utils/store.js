@@ -37,6 +37,7 @@ let _state = {
   runtimeOverrides: null,
   aiMetrics: null,
   configOverrides: null, // Config changes from dashboard
+  botState: null,        // Away mode state
 };
 
 let _saveTimer = null;
@@ -93,6 +94,11 @@ function serialize() {
   // Config overrides from dashboard
   if (_state.configOverrides) {
     data.configOverrides = Object.assign({}, _state.configOverrides);
+  }
+
+  // Away mode state
+  if (_state.botState) {
+    data.botState = { awayMode: _state.botState.awayMode };
   }
 
   return data;
@@ -201,6 +207,7 @@ function load() {
       const applied = [];
 
       if (c.ownerName) { process.env.OWNER_NAME = c.ownerName; applied.push('name'); }
+      if (c.language) { config.language = c.language; applied.push('lang'); }
       if (c.timezone) { config.timezone = c.timezone; applied.push('tz'); }
       if (c.replyDelay) { config.safety.replyDelay = c.replyDelay; applied.push('delay'); }
       if (c.maxTokens) { config.ai.maxTokens = c.maxTokens; applied.push('tokens'); }
@@ -214,6 +221,14 @@ function load() {
       if (c.scheduleEnd && config.awayMode.schedule) { config.awayMode.schedule.sleepEnd = c.scheduleEnd; }
 
       if (applied.length) logger.info(`[Store] Restored config: ${applied.join(', ')}`);
+    }
+
+    // Restore away mode state
+    if (data.botState && _state.botState) {
+      if (data.botState.awayMode !== undefined) {
+        _state.botState.awayMode = data.botState.awayMode;
+        logger.info(`[Store] Restored away mode: ${data.botState.awayMode ? 'ON' : 'OFF'}`);
+      }
     }
 
     logger.info(`[Store] State loaded from ${data._savedAt || 'unknown time'}`);

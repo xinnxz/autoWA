@@ -172,6 +172,7 @@ ${L.helpFooter(currentStyle, currentModel)}`;
       text: `${L.awayOn}\n\n${L.awayOnDetail(style, runtimeOverrides.model || config.ai.model || 'default')}` 
     });
     logger.info('Away mode ON');
+    store.save();
     return true;
   }
 
@@ -183,6 +184,7 @@ ${L.helpFooter(currentStyle, currentModel)}`;
       clearTimeout(botState.dndTimer);
       botState.dndTimer = null;
     }
+    store.save();
     const L = getLocale().cmd;
     await sock.sendMessage(msg.from, { 
       text: `${L.awayOff}\n\n${L.awayOffDetail}` 
@@ -221,7 +223,8 @@ ${L.helpFooter(currentStyle, currentModel)}`;
       botState.dndUntil = null;
       botState.dndTimer = null;
       botState.awayMode = config.awayMode.enabled; // Kembali ke default
-      logger.info('⏰ DND berakhir!');
+      logger.info('DND berakhir!');
+      store.save();
     }, duration);
 
     const endTime = new Date(Date.now() + duration).toLocaleTimeString('id-ID', { 
@@ -580,3 +583,4 @@ module.exports = { handleCommand, isAway, addToInbox, botState, runtimeOverrides
 store.register('inbox', inbox);
 store.register('groupSettings', groupSettings);
 store.register('runtimeOverrides', runtimeOverrides);
+store.register('botState', botState);
