@@ -325,8 +325,8 @@ const startTime = new Date().toLocaleString('id-ID', { timeZone: config.timezone
 console.log('');
 console.log('╔══════════════════════════════════════════╗');
 console.log('║                                          ║');
-console.log('║   🤖 AutoWA Bot v2.0.0                  ║');
-console.log('║   Personal Auto-Reply (Baileys)         ║');
+console.log('║   🤖 AutoWA Bot v2.0.0                   ║');
+console.log('║   Personal Auto-Reply (Baileys)          ║');
 console.log('║                                          ║');
 console.log(`║   ${startTime.padEnd(38)} ║`);
 console.log('║                                          ║');

@@ -61,18 +61,39 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
+      // Clear previous QR timer if any
+      if (sock._qrTimer) { clearInterval(sock._qrTimer); sock._qrTimer = null; }
+
       console.log('');
-      console.log('📱 Scan QR code ini dengan WhatsApp kamu:');
-      console.log('   (Settings → Linked Devices → Link a Device)');
+      console.log('Scan QR code ini dengan WhatsApp kamu:');
+      console.log('   (Settings > Linked Devices > Link a Device)');
       console.log('');
       qrcode.generate(qr, { small: true });
+
+      // Countdown timer
+      let sec = 60;
+      process.stdout.write(`\n   QR expires in: ${sec}s\r`);
+      sock._qrTimer = setInterval(() => {
+        sec--;
+        if (sec <= 0) {
+          clearInterval(sock._qrTimer);
+          sock._qrTimer = null;
+          process.stdout.write(`   QR expired. Waiting for new QR...       \n`);
+          return;
+        }
+        const bar = '█'.repeat(Math.ceil(sec / 2)) + '░'.repeat(30 - Math.ceil(sec / 2));
+        process.stdout.write(`   QR expires in: ${String(sec).padStart(2)} s  [${bar}]\r`);
+      }, 1000);
+
       // Kirim QR ke web page juga
       if (onQR) onQR(qr);
     }
 
     if (connection === 'open') {
-      logger.info('✅ Terhubung ke WhatsApp!');
-      logger.info(`📱 Logged in as: ${sock.user?.name || sock.user?.id}`);
+      if (sock._qrTimer) { clearInterval(sock._qrTimer); sock._qrTimer = null; }
+      console.log('');
+      logger.info('Terhubung ke WhatsApp!');
+      logger.info(`Logged in as: ${sock.user?.name || sock.user?.id}`);
       if (onConnected) onConnected();
     }
 
