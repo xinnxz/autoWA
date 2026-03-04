@@ -57,6 +57,21 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
     generateHighQualityLinkPreview: false,
   });
 
+  // Suppress Baileys internal session noise (prekey bundles, signal protocol, etc.)
+  const _origLog = console.log;
+  const _origWarn = console.warn;
+  const noisePatterns = ['session', 'prekey', 'Signal', 'sender key', 'Closing open', 'retry', 'pendingPreKey', 'baseKey', 'previousCounter', 'signedKeyId'];
+  console.log = (...args) => {
+    const str = args.map(a => typeof a === 'string' ? a : '').join(' ');
+    if (noisePatterns.some(p => str.includes(p))) return;
+    _origLog.apply(console, args);
+  };
+  console.warn = (...args) => {
+    const str = args.map(a => typeof a === 'string' ? a : '').join(' ');
+    if (noisePatterns.some(p => str.includes(p))) return;
+    _origWarn.apply(console, args);
+  };
+
   sock.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect, qr } = update;
 
