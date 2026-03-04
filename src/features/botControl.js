@@ -20,6 +20,7 @@
 const config = require('../../config.js');
 const logger = require('../utils/logger');
 const { getLocale, getStylePresets } = require('../utils/locale');
+const store = require('../utils/store');
 
 // ─── State bot (disimpan di memory) ───
 const botState = {
@@ -103,6 +104,7 @@ function addToInbox(from, name, text) {
   });
   // Batasi inbox agar ga makan memory
   if (inbox.length > MAX_INBOX) inbox.shift();
+  store.save();
 }
 
 /**
@@ -573,3 +575,8 @@ function getGroupStyle(groupId) {
 }
 
 module.exports = { handleCommand, isAway, addToInbox, botState, runtimeOverrides, groupSettings, isGroupEnabled, getGroupStyle, inbox };
+
+// ─── Register state for persistence ───
+store.register('inbox', inbox);
+store.register('groupSettings', groupSettings);
+store.register('runtimeOverrides', runtimeOverrides);

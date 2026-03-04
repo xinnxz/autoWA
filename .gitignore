@@ -8,7 +8,7 @@ node_modules/
 auth_info/
 
 # Data yang di-generate runtime
-data/orders.json
+data/
 
 # OS files
 .DS_Store

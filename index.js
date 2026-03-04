@@ -61,6 +61,10 @@ app.get('/dashboard', authDashboard, (req, res) => {
 // ─── Contact tracker (shared module) ───
 const { getContacts } = require('./src/utils/contacts');
 
+// ─── Load persisted state ───
+const store = require('./src/utils/store');
+store.load();
+
 // ─── API: Stats (semua data untuk dashboard) ───
 app.get('/api/stats', authDashboard, (req, res) => {
   const { botState, runtimeOverrides, groupSettings, inbox } = require('./src/features/botControl');
@@ -232,6 +236,7 @@ app.post('/api/groups/toggle', authDashboard, (req, res) => {
   if (!groupSettings[id]) groupSettings[id] = { enabled: false, style: null };
   groupSettings[id].enabled = !!enabled;
   logger.info(`[Dashboard] Group ${id}: ${enabled ? 'ON' : 'OFF'}`);
+  store.save();
   res.json({ ok: true });
 });
 

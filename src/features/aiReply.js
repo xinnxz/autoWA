@@ -22,6 +22,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Groq = require('groq-sdk');
 const config = require('../../config.js');
 const logger = require('../utils/logger');
+const store = require('../utils/store');
 
 // Import runtime overrides (bisa diubah lewat WA command)
 // Lazy-load untuk hindari circular dependency
@@ -113,6 +114,7 @@ function addToHistory(contactId, role, content) {
   
   // Trim kalo melebihi max
   while (history.length > maxMessages) history.shift();
+  store.save();
 }
 
 /**
@@ -124,6 +126,7 @@ function clearHistory(contactId) {
   } else {
     chatHistory.clear();
   }
+  store.save();
   return chatHistory.size;
 }
 
@@ -535,3 +538,7 @@ async function handleContextual(sock, msg, opts = {}) {
 function getAIMetrics() { return { ...aiMetrics }; }
 
 module.exports = { handle, handleContextual, clearHistory, getAIMetrics };
+
+// ─── Register state for persistence ───
+store.register('chatHistory', chatHistory);
+store.register('aiMetrics', aiMetrics);

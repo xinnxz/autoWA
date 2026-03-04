@@ -2,7 +2,9 @@
 // src/utils/contacts.js — Contact Tracker
 // ============================================
 // Tracks contacts who have sent messages to the bot.
-// Data stored in memory (resets on restart).
+// Data persisted via store.js (survives restarts).
+
+const store = require('./store');
 
 const contacts = new Map(); // contactId -> { name, msgCount, lastMsg, lastTime }
 
@@ -17,6 +19,7 @@ function trackContact(from, name, text) {
   existing.lastMsg = (text || '').substring(0, 80);
   existing.lastTime = Date.now();
   contacts.set(id, existing);
+  store.save();
 }
 
 /**
@@ -29,6 +32,9 @@ function getContacts(limit = 50) {
     .slice(0, limit);
 }
 
-function clearContacts() { contacts.clear(); }
+function clearContacts() { contacts.clear(); store.save(); }
 
 module.exports = { trackContact, getContacts, clearContacts };
+
+// ─── Register for persistence ───
+store.register('contacts', contacts);
