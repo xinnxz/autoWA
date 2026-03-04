@@ -439,72 +439,121 @@ app.get('/', async (req, res) => {
   `);
 });
 
-// ─── Tampilkan banner ───
-const startTime = new Date().toLocaleString('id-ID', { timeZone: config.timezone || 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'medium' });
-const G = '\x1b[32m', R = '\x1b[0m', D = '\x1b[90m';
-console.log('');
-console.log(`${G}    _         _     __        ___    ${R}`);
-console.log(`${G}   / \\  _   _| |_ __\\ \\      / / \\   ${R}`);
-console.log(`${G}  / _ \\| | | | __/ _ \\ \\ /\\ / / _ \\  ${R}`);
-console.log(`${G} / ___ \\ |_| | || (_) \\ V  V / ___ \\ ${R}`);
-console.log(`${G}/_/   \\_\\__,_|\\__\\___/ \\_/\\_/_/   \\_\\${R}`);
-console.log(`${D}  v2.0.0 · Personal Auto-Reply Bot${R}`);
-console.log(`${D}  ${startTime}${R}`);
-console.log('');
+// ─── CLI Display Helpers ───
+const C = {
+  g: '\x1b[32m',    // green
+  c: '\x1b[36m',    // cyan
+  y: '\x1b[33m',    // yellow
+  r: '\x1b[31m',    // red
+  b: '\x1b[1m',     // bold
+  d: '\x1b[90m',    // dim
+  x: '\x1b[0m',     // reset
+};
 
-// ─── Config info ───
-logger.info(`Owner: ${process.env.OWNER_NAME || 'Not set'}`);
-logger.info(`Language: ${config.language || 'id'}`);
-logger.info(`Away Mode: ${config.awayMode.enabled ? 'ON' : 'OFF'}`);
-if (config.awayMode.schedule.enabled) {
-  logger.info(`Schedule: Away ${config.awayMode.schedule.sleepStart} - ${config.awayMode.schedule.sleepEnd} WIB`);
+function cliBanner() {
+  const startTime = new Date().toLocaleString('id-ID', { timeZone: config.timezone || 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'medium' });
+  console.log('');
+  console.log(`${C.g}${C.b}    _         _     __        ___    ${C.x}`);
+  console.log(`${C.g}${C.b}   / \\  _   _| |_ __\\ \\      / / \\   ${C.x}`);
+  console.log(`${C.g}${C.b}  / _ \\| | | | __/ _ \\ \\ /\\ / / _ \\  ${C.x}`);
+  console.log(`${C.g}${C.b} / ___ \\ |_| | || (_) \\ V  V / ___ \\ ${C.x}`);
+  console.log(`${C.g}${C.b}/_/   \\_\\__,_|\\__\\___/ \\_/\\_/_/   \\_\\${C.x}`);
+  console.log(`${C.d}  v2.0.0 | ${startTime}${C.x}`);
+  console.log('');
 }
-logger.info(`Reply Delay: ${config.safety.replyDelay}ms`);
-logger.info(`Max Reply/Contact: ${config.safety.maxRepliesPerContact}x (cooldown ${config.safety.cooldownPerContact}s)`);
-logger.info(`Ignore Groups: ${config.safety.ignoreGroups ? 'Ya' : 'Tidak'}`);
-logger.info(`Dashboard: http://localhost:${PORT}/dashboard?key=***`);
-console.log('');
+
+function cliConfig() {
+  const key = process.env.OWNER_NUMBER || '';
+  const dashUrl = `http://localhost:${PORT}/dashboard?key=${key}`;
+  const lines = [
+    ['owner', process.env.OWNER_NAME || 'Not set'],
+    ['language', config.language || 'id'],
+    ['away', config.awayMode.enabled ? 'ON' : 'OFF'],
+    ['delay', `${config.safety.replyDelay}ms`],
+    ['cooldown', `${config.safety.cooldownPerContact}s`],
+    ['max-reply', `${config.safety.maxRepliesPerContact}x`],
+    ['groups', config.safety.ignoreGroups ? 'IGNORE' : 'ACTIVE'],
+  ];
+  if (config.awayMode.schedule?.enabled) {
+    lines.push(['schedule', `${config.awayMode.schedule.sleepStart}-${config.awayMode.schedule.sleepEnd}`]);
+  }
+
+  console.log(`${C.d}  ─── system config ───────────────────${C.x}`);
+  for (const [k, v] of lines) {
+    console.log(`${C.d}  ${C.c}${k.padEnd(12)}${C.d}= ${C.g}${v}${C.x}`);
+  }
+  console.log('');
+  console.log(`${C.d}  ─── dashboard ────────────────────────${C.x}`);
+  console.log(`${C.c}  ${dashUrl}${C.x}`);
+  console.log('');
+}
+
+function cliConnected(name) {
+  console.log('');
+  console.log(`${C.g}  ┌─────────────────────────────────────────┐${C.x}`);
+  console.log(`${C.g}  │                                         │${C.x}`);
+  console.log(`${C.g}  │   ${C.b}[ONLINE]${C.x}${C.g}  WhatsApp Connected        │${C.x}`);
+  console.log(`${C.g}  │   ${C.d}user:${C.x}${C.g}    ${name.padEnd(26)}│${C.x}`);
+  console.log(`${C.g}  │   ${C.d}status:${C.x}${C.g}  Bot aktif & siap menerima  │${C.x}`);
+  console.log(`${C.g}  │                                         │${C.x}`);
+  console.log(`${C.g}  └─────────────────────────────────────────┘${C.x}`);
+  console.log('');
+}
+
+// ─── Animated loader ───
+function startLoader(text) {
+  const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  let i = 0;
+  const id = setInterval(() => {
+    process.stdout.write(`\r${C.c}  ${frames[i++ % frames.length]} ${text}${C.x}   `);
+  }, 80);
+  return { stop: (msg) => {
+    clearInterval(id);
+    process.stdout.write(`\r${C.g}  ✓ ${msg}${C.x}                              \n`);
+  }};
+}
 
 // ─── Start bot! ───
 async function start() {
   try {
-    // Start web server dulu (untuk health check + QR)
-    app.listen(PORT, () => {
-      logger.info(`Web server jalan di port ${PORT}`);
-      logger.info(`QR Scanner: http://localhost:${PORT}`);
-    });
-
-    // AI key check (tampilkan sebelum connecting)
-    const hasGroq = process.env.GROQ_API_KEY_1 || process.env.GROQ_API_KEY;
-    const hasGemini = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
-    if (hasGroq) logger.info('Groq API configured');
-    if (hasGemini) logger.info('Gemini API configured');
-    if (!hasGroq && !hasGemini) {
-      logger.warn('Tidak ada API key AI (Groq/Gemini). Fitur AI contextual tidak aktif.');
-    }
-
-    logger.info('Menghubungkan ke WhatsApp...');
-    const sock = await connectToWhatsApp(handleMessage, (qr) => {
-      // Callback untuk QR update
-      currentQR = qr;
-      qrGeneratedAt = Date.now();
-      logger.info('QR Code baru tersedia! Scan dari browser.');
-    }, () => {
-      // Callback untuk connected — tampil SETELAH banner CONNECTED
-      isConnected = true;
-      currentQR = null;
-      qrGeneratedAt = null;
-      logger.info('Bot aktif -- semua pesan masuk akan diproses otomatis');
-    });
+    cliBanner();
+    cliConfig();
 
     // AI key check
     const hasGroq = process.env.GROQ_API_KEY_1 || process.env.GROQ_API_KEY;
     const hasGemini = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
-    if (hasGroq) logger.info('Groq API configured');
-    if (hasGemini) logger.info('Gemini API configured');
-    if (!hasGroq && !hasGemini) {
-      logger.warn('Tidak ada API key AI (Groq/Gemini). Fitur AI contextual tidak aktif.');
+    let aiInfo = [];
+    if (hasGroq) aiInfo.push('Groq');
+    if (hasGemini) aiInfo.push('Gemini');
+    if (aiInfo.length) {
+      console.log(`${C.d}  ─── ai providers ────────────────────${C.x}`);
+      console.log(`${C.g}  ${aiInfo.join(' + ')} configured${C.x}`);
+      console.log('');
+    } else {
+      console.log(`${C.y}  [!] Tidak ada API key AI${C.x}`);
+      console.log('');
     }
+
+    // Start web server
+    const loader1 = startLoader('Starting web server...');
+    await new Promise(resolve => app.listen(PORT, resolve));
+    loader1.stop(`Web server aktif di port ${PORT}`);
+
+    // Connect to WhatsApp
+    const loader2 = startLoader('Connecting to WhatsApp...');
+    const sock = await connectToWhatsApp(handleMessage, (qr) => {
+      loader2.stop('QR Code tersedia');
+      currentQR = qr;
+      qrGeneratedAt = Date.now();
+      logger.info('Scan QR dari browser atau terminal');
+    }, (name) => {
+      loader2.stop('WhatsApp terhubung');
+      isConnected = true;
+      currentQR = null;
+      qrGeneratedAt = null;
+      cliConnected(name);
+      logger.info('Bot aktif -- semua pesan akan diproses otomatis');
+    });
   } catch (err) {
     logger.error('Gagal start bot', err);
   }
