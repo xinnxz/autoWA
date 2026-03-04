@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/logo.jpg" alt="AutoWA" width="280">
+<img src="public/logo.png" alt="AutoWA" width="280">
 
 # AutoWA
 
@@ -30,6 +30,7 @@ Uses AI to generate contextual, human-like responses — not canned templates.
 - [Deploy](#deploy)
   - [Local (CLI)](#option-1--local-cli)
   - [Koyeb (Cloud, Free)](#option-2--koyeb-cloud-free-tier)
+  - [Termux (Android)](#option-3--termux-android)
 - [Web Dashboard](#web-dashboard)
 - [Commands](#commands)
 - [Configuration](#configuration)
@@ -310,6 +311,91 @@ If you prefer not to use the CLI:
 
 ---
 
+### Option 3 — Termux (Android)
+
+Run the bot directly from your Android phone using [Termux](https://f-droid.org/packages/com.termux/). No PC or server needed.
+
+> **Important:** Install Termux from [F-Droid](https://f-droid.org/packages/com.termux/), NOT from Google Play Store. The Play Store version is outdated.
+
+#### Step 1 — Install dependencies
+
+Open Termux and run:
+
+```bash
+pkg update && pkg upgrade -y
+pkg install -y nodejs-lts git
+```
+
+This installs Node.js 18+ and Git.
+
+#### Step 2 — Clone and install
+
+```bash
+git clone https://github.com/xinnxz/autoWA.git
+cd autoWA
+npm install
+```
+
+> First `npm install` may take 2-5 minutes on phone. Be patient.
+
+#### Step 3 — Create .env file
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Fill in your values (same as [Step 2 in Setup](#step-2--create-environment-file)). Press `Ctrl+X`, then `Y`, then `Enter` to save.
+
+#### Step 4 — Run the bot
+
+```bash
+node index.js
+```
+
+Scan the QR code from the terminal or open the dashboard in your phone's browser:
+
+```
+http://localhost:3000/dashboard?key=YOUR_OWNER_NUMBER
+```
+
+#### Keep running in background (tmux)
+
+Without tmux, the bot stops when you close Termux. To keep it running:
+
+```bash
+pkg install -y tmux
+tmux new -s autowa
+cd autoWA && node index.js
+```
+
+To detach (bot keeps running): press `Ctrl+B`, then `D`
+
+To reattach later:
+```bash
+tmux attach -t autowa
+```
+
+#### Termux Tips
+
+| Tip | Detail |
+|-----|--------|
+| **Acquire Wakelock** | Open notification drawer → tap Termux notification → "Acquire Wakelock". Prevents Android from killing Termux. |
+| **Disable battery optimization** | Settings → Apps → Termux → Battery → Unrestricted |
+| **Access from PC** | Install `pkg install openssh`, run `sshd`. Connect via `ssh user@phone-ip -p 8022` |
+| **Storage access** | Run `termux-setup-storage` to access phone files |
+
+#### Termux Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `npm install` fails with gyp errors | Run `pkg install python make` first |
+| "address already in use" | Another instance is running. Kill it: `pkill -f node` |
+| Bot stops when phone sleeps | Acquire Wakelock (see tips above) |
+| Permission denied | Run `chmod +x index.js` |
+
+---
+
 ## Web Dashboard
 
 The dashboard provides a full control panel accessible from any browser.
@@ -322,17 +408,17 @@ The `key` parameter is your `OWNER_NUMBER` from the `.env` file. Without it, the
 
 | Page | What it shows |
 |------|---------------|
-| **Dashboard** | Stats (uptime, inbox count, AI calls, contacts), activity feed, latency chart, control bar |
+| **Dashboard** | Stats (uptime, inbox count, AI calls, contacts), activity feed, latency chart (read-only monitoring) |
 | **Inbox** | Messages received while in away mode |
 | **Logs** | Real-time server log stream (SSE) |
 | **Contacts** | List of people who messaged the bot, with message count and last seen |
-| **Configuration** | Current config values (read-only view) |
-| **Groups** | Enabled groups and their settings |
+| **Configuration** | Quick controls (away, style, model, language) + editable settings (delay, tokens, schedule, etc.) + Save button |
+| **Groups** | Registered groups with per-group enable/disable toggle |
 | **Connection** | QR code scanner for WhatsApp linking |
 
 ### Controls
 
-From the Dashboard page toolbar:
+From the Configuration page:
 
 | Control | Action |
 |---------|--------|
@@ -341,7 +427,20 @@ From the Dashboard page toolbar:
 | **Model dropdown** | Change AI model at runtime |
 | **Language dropdown** | Switch bot language (10 options) |
 | **Clear History** | Wipe AI conversation memory |
-| **Refresh** | Force data reload |
+| **Owner Name** | Change display name |
+| **Timezone** | Set IANA timezone |
+| **Reply Delay** | Adjust reply delay (500-10000ms) |
+| **Max Tokens** | Adjust AI response length (200-4096) |
+| **Max Replies** | Replies per contact per cooldown (1-20) |
+| **Cooldown** | Cooldown period in seconds |
+| **Contextual AI** | Toggle contextual reply mode |
+| **Chat History** | Toggle AI conversation memory |
+| **Ignore Groups** | Toggle group message filtering |
+| **Auto Schedule** | Toggle scheduled away mode |
+| **Sleep Start/End** | Set away schedule times |
+| **Save** | Apply all editable settings |
+
+All changes are **persisted** and survive bot restarts.
 
 ### Keyboard Shortcuts
 
@@ -368,8 +467,12 @@ All endpoints require `?key=OWNER_NUMBER`.
 | `POST` | `/api/style` | Change style — body: `{ "style": "formal" }` |
 | `POST` | `/api/model` | Change model — body: `{ "model": "llama-3.3-70b-versatile" }` |
 | `POST` | `/api/language` | Change language — body: `{ "lang": "en" }` |
+| `POST` | `/api/config` | Update config settings (delay, tokens, schedule, etc.) |
+| `POST` | `/api/groups/toggle` | Toggle group enable/disable — body: `{ "id": "...", "enabled": true }` |
 | `GET` | `/api/inbox/clear` | Clear inbox |
 | `GET` | `/api/history/clear` | Clear chat history |
+| `GET` | `/api/logs/clear` | Clear log buffer |
+| `GET` | `/api/contacts/clear` | Clear contact tracker |
 | `GET` | `/api/logs/stream` | SSE log stream |
 | `GET` | `/api/qr` | QR code data (JSON) |
 | `GET` | `/health` | Health check (no auth) |
@@ -572,6 +675,7 @@ autoWA/
 |   |   |-- logger.js           # Logging with SSE broadcast
 |   |   |-- locale.js           # Language/locale loader
 |   |   |-- contacts.js         # Contact tracking module
+|   |   |-- store.js            # State persistence engine (JSON file)
 |   |   +-- adminCmd.js         # Admin command utilities
 |   |
 |   +-- web/
@@ -589,6 +693,9 @@ autoWA/
 |   |-- fr.js                   # Francais
 |   |-- ms.js                   # Bahasa Melayu
 |   +-- _template.js            # Template for adding new languages
+|
++-- data/                       # Persisted state (auto-generated, not committed)
+|   +-- state.json              # Inbox, contacts, groups, config overrides
 |
 +-- auth_info/                  # WhatsApp session data (not committed)
 ```
