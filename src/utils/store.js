@@ -38,6 +38,7 @@ let _state = {
   aiMetrics: null,
   configOverrides: null, // Config changes from dashboard
   botState: null,        // Away mode state
+  userProfiles: null,    // User long-term memory facts
 };
 
 let _saveTimer = null;
@@ -74,6 +75,11 @@ function serialize() {
   // Chat history: Map → array of [key, value]
   if (_state.chatHistory) {
     data.chatHistory = Array.from(_state.chatHistory.entries());
+  }
+
+  // User Profiles: Map → array of [key, value]
+  if (_state.userProfiles) {
+    data.userProfiles = Array.from(_state.userProfiles.entries());
   }
 
   // Runtime overrides: plain object
@@ -182,6 +188,14 @@ function load() {
         }
       }
       logger.info(`[Store] Restored ${count} chat histories`);
+    }
+
+    // Restore user profiles
+    if (data.userProfiles && _state.userProfiles) {
+      for (const [key, val] of data.userProfiles) {
+        _state.userProfiles.set(key, val);
+      }
+      logger.info(`[Store] Restored ${data.userProfiles.length} user profiles`);
     }
 
     // Restore runtime overrides

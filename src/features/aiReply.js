@@ -20,9 +20,11 @@
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Groq = require('groq-sdk');
+const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const config = require('../../config.js');
 const logger = require('../utils/logger');
 const store = require('../utils/store');
+const { toolsSchema, executeTool } = require('./tools');
 
 // Import runtime overrides (bisa diubah lewat WA command)
 // Lazy-load untuk hindari circular dependency
@@ -64,6 +66,11 @@ const providerOrder = ['groq', 'gemini'];
 // Key: contactId (628xxx@s.whatsapp.net)
 // Value: [{ role: 'user'|'assistant', content: string, time: number }]
 const chatHistory = new Map();
+
+// ─── User Profiles (Long-term memory per kontak) ───
+// Key: contactId
+// Value: { name: "Budi", hobi: "Memancing", ... }
+const userProfiles = new Map();
 
 // ─── AI Metrics (latency tracking) ───
 const aiMetrics = {
@@ -335,13 +342,23 @@ function buildDynamicContext() {
 }
 
 /**
- * Generate via Groq (DeepSeek R1)
+ * Generate via Groq (DeepSeek R1 / Llama 3)
  */
-async function callGroq(keyIdx, prompt, mode, history = []) {
+async function callGroq(keyIdx, prompt, mode, history = [], contactId = null) {
   const client = providers.groq.clients[keyIdx];
   const ownerName = process.env.OWNER_NAME || 'Bot';
   const locale = getLocale();
   const P = locale.prompt;
+
+  // Bangun teks fakta pengguna jika ada datanya di userProfiles
+  let profileContext = '';
+  if (contactId && userProfiles.has(contactId)) {
+    const profileObj = userProfiles.get(contactId);
+    if (Object.keys(profileObj).length > 0) {
+      const facts = Object.entries(profileObj).map(([k, v]) => `- ${k.toUpperCase()}: ${v}`).join('\n');
+      profileContext = `\n\n[MEMORI PENGGUNA]\nBerikut adalah identitas dan fakta tentang pengguna yang saat ini bicara denganmu (Contact ID: ${contactId}):\n${facts}\nGunakan informasi ini untuk membalas secara lebih sadar-konteks (misal memanggil namanya atau mengingat kesukaannya). Jangan sering-sering mengungkit fakta ini jika tidak relevan.`;
+    }
+  }
 
   let systemPrompt;
   if (mode === 'contextual') {
@@ -362,13 +379,13 @@ ${P.timeContext}
 - ${ctx.tanggalStr}
 - ${ctx.waktuStr} (${ctx.waktu})
 ${ctx.konteksEvent ? '- Event: ' + ctx.konteksEvent + '\n' : ''}- ${ctx.possibleActivity}: ${ctx.aktivitasStr}
-${P.timeNote(ownerName)}
+${P.timeNote(ownerName)}${profileContext}
 
 ${P.rulesHeader}
 ${rules}
 ${P.closingRule(ownerName)}`;
   } else {
-    systemPrompt = config.ai.systemPrompt;
+    systemPrompt = config.ai.systemPrompt + profileContext;
   }
 
   // Build messages: system + chat history + current user message
@@ -383,9 +400,44 @@ ${P.closingRule(ownerName)}`;
     messages,
     max_tokens: config.ai.maxTokens || 500,
     temperature: 0.6,
+    tools: toolsSchema,
+    tool_choice: 'auto'
   });
 
-  let reply = completion.choices[0]?.message?.content || '';
+  const responseMsg = completion.choices[0]?.message;
+  let reply = responseMsg?.content || '';
+
+  // ─── TOOL CALLING HANDLER ───
+  if (responseMsg?.tool_calls && responseMsg.tool_calls.length > 0) {
+    logger.debug(`[AI] Memanggil ${responseMsg.tool_calls.length} alat eksternal...`);
+    messages.push(responseMsg); // Tambahkan pesan AI (yang mau memanggil tool) ke history log
+    
+    for (const toolCall of responseMsg.tool_calls) {
+      const functionName = toolCall.function.name;
+      const argsObj = JSON.parse(toolCall.function.arguments);
+      
+      // Eksekusi tool 
+      const toolContext = { contactId, userProfiles, saveStore: () => store.save() };
+      const toolResult = await executeTool(functionName, argsObj, toolContext);
+      
+      // Laporkan hasil tool ke AI
+      messages.push({
+        role: "tool",
+        tool_call_id: toolCall.id,
+        content: toolResult
+      });
+    }
+
+    // Panggil ulang AI dengan tambahan konteks hasil Web Search / Cuaca
+    const secondCall = await client.chat.completions.create({
+      model: getOverrides().model || config.ai.model || 'llama-3.3-70b-versatile',
+      messages,
+      max_tokens: config.ai.maxTokens || 500,
+      temperature: 0.6,
+    });
+    
+    reply = secondCall.choices[0]?.message?.content || '';
+  }
   
   // DeepSeek R1 kadang output <think>...</think> tags, hapus
   reply = reply.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
@@ -396,12 +448,59 @@ ${P.closingRule(ownerName)}`;
 /**
  * Generate via Gemini
  */
-async function callGemini(keyIdx, prompt, mode) {
+async function callGemini(keyIdx, prompt, mode, imageBase64) {
   const model = mode === 'contextual'
     ? providers.gemini.contextualModels[keyIdx]
     : providers.gemini.prefixModels[keyIdx];
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+  
+  if (imageBase64) {
+    const parts = [
+      { text: prompt },
+      { inlineData: { data: imageBase64, mimeType: 'image/jpeg' } }
+    ];
+    const result = await model.generateContent(parts);
+    return result.response.text();
+  } else {
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  }
+}
+
+/**
+ * Ekstrak gambar dari pesan (termasuk quoted message)
+ */
+async function extractImageBase64(msg) {
+  if (!msg.raw || !msg.raw.message) return null;
+  const message = msg.raw.message;
+
+  let imageMessage = message.imageMessage;
+  let isQuoted = false;
+
+  if (message.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage) {
+    imageMessage = message.extendedTextMessage.contextInfo.quotedMessage.imageMessage;
+    isQuoted = true;
+  }
+
+  if (imageMessage) {
+    try {
+      const msgToDownload = isQuoted ? {
+        key: msg.raw.key,
+        message: message.extendedTextMessage.contextInfo.quotedMessage
+      } : msg.raw;
+
+      const buffer = await downloadMediaMessage(
+        msgToDownload,
+        'buffer',
+        {},
+        { logger }
+      );
+      return buffer.toString('base64');
+    } catch (err) {
+      logger.error('Gagal ekstrak gambar', err);
+      return null;
+    }
+  }
+  return null;
 }
 
 /**
@@ -413,7 +512,7 @@ async function callGemini(keyIdx, prompt, mode) {
  * 3. Kalau semua key provider habis → lanjut provider berikutnya
  * 4. Kalau semua provider habis → throw error
  */
-async function generateWithRotation(prompt, mode = 'prefix', history = []) {
+async function generateWithRotation(prompt, mode = 'prefix', history = [], imageBase64 = null, contactId = null) {
   if (providers.groq.keys.length === 0 && providers.gemini.keys.length === 0) loadKeys();
 
   let lastError = null;
@@ -421,6 +520,11 @@ async function generateWithRotation(prompt, mode = 'prefix', history = []) {
   for (const providerName of providerOrder) {
     const p = providers[providerName];
     if (p.keys.length === 0) continue;
+
+    if (imageBase64 && providerName === 'groq') {
+      logger.debug('Skipping Groq (does not support Vision), fallback to Gemini');
+      continue;
+    }
 
     for (let attempt = 0; attempt < p.keys.length; attempt++) {
       const keyIdx = getAvailableKey(providerName);
@@ -432,9 +536,9 @@ async function generateWithRotation(prompt, mode = 'prefix', history = []) {
         const startTime = Date.now();
         let result;
         if (providerName === 'groq') {
-          result = await callGroq(keyIdx, prompt, mode, history);
+          result = await callGroq(keyIdx, prompt, mode, history, contactId);
         } else {
-          result = await callGemini(keyIdx, prompt, mode);
+          result = await callGemini(keyIdx, prompt, mode, imageBase64);
         }
         const latency = Date.now() - startTime;
 
@@ -475,15 +579,24 @@ try { loadKeys(); } catch (err) { logger.warn(err.message); }
  */
 async function handle(sock, msg) {
   const question = msg.text.replace(config.ai.prefix, '').trim();
-  if (!question) {
-    await sock.sendMessage(msg.from, { text: '❌ Tulis pertanyaanmu!\nContoh: *!ai Apa itu JavaScript?*' });
+  const imageBase64 = await extractImageBase64(msg);
+
+  if (!question && !imageBase64) {
+    await sock.sendMessage(msg.from, { text: '❌ Tulis pertanyaanmu atau kirim gambar sambil mengetik !ai\nContoh: *!ai Apa ini?*' });
     return;
   }
 
+  const finalQuestion = question || "Tolong jelaskan apa yang ada di gambar ini secara detail.";
+
+  const contactId = msg.from;
+
   try {
     await sock.sendMessage(msg.from, { text: '🤖 _Sedang berpikir..._' });
-    const aiText = await generateWithRotation(question, 'prefix');
-    await sock.sendMessage(msg.from, { text: `🤖 *AI Assistant*\n\n${aiText}\n\n─────────────────\n_Powered by Groq + Gemini AI_` });
+    const aiText = await generateWithRotation(finalQuestion, 'prefix', [], imageBase64, contactId);
+    
+    // Sesuaikan footer jika gambar digunakan
+    const footer = imageBase64 ? '_Powered by Gemini Vision_' : '_Powered by Groq + Gemini AI_';
+    await sock.sendMessage(msg.from, { text: `🤖 *AI Assistant*\n\n${aiText}\n\n─────────────────\n${footer}` });
     logger.outgoing(msg.from.split('@')[0], `[AI] ${aiText.substring(0, 50)}...`);
   } catch (err) {
     logger.error('AI error', err);
@@ -506,12 +619,17 @@ async function handleContextual(sock, msg, opts = {}) {
 
     const contactId = msg.from;
     const history = getHistory(contactId);
+    const imageBase64 = await extractImageBase64(msg);
 
     // Save user message to history
-    addToHistory(contactId, 'user', msg.text);
+    addToHistory(contactId, 'user', msg.text || '[Gambar]');
 
-    const prompt = `${msg.name} mengirim pesan: "${msg.text}"\n\nBalas pesan ini.`;
-    const aiText = await generateWithRotation(prompt, 'contextual', history);
+    let prompt = `${msg.name} mengirim pesan: "${msg.text || '[Mengirim Gambar]'}"\n\nBalas pesan ini.`;
+    if (imageBase64) {
+      prompt = `${msg.name} mengirim gambar dengan pesan: "${msg.text || ''}"\n\nBalas pesan ini sambil mempertimbangkan gambar yang ia kirimkan.`;
+    }
+
+    const aiText = await generateWithRotation(prompt, 'contextual', history, imageBase64, contactId);
 
     // Save bot reply to history
     addToHistory(contactId, 'assistant', aiText);
@@ -542,3 +660,4 @@ module.exports = { handle, handleContextual, clearHistory, getAIMetrics };
 // ─── Register state for persistence ───
 store.register('chatHistory', chatHistory);
 store.register('aiMetrics', aiMetrics);
+store.register('userProfiles', userProfiles);

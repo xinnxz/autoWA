@@ -188,15 +188,15 @@ app.post('/api/config', authDashboard, (req, res) => {
   }
   if (delay !== undefined) {
     const v = parseInt(delay);
-    if (v >= 500 && v <= 10000) { config.safety.replyDelay = v; changes.push(`Delay → ${v}ms`); }
+    if (!isNaN(v) && v >= 0) { config.safety.replyDelay = v; changes.push(`Delay → ${v}ms`); }
   }
   if (cooldown !== undefined) {
     const v = parseInt(cooldown);
-    if (v >= 30 && v <= 3600) { config.safety.cooldownPerContact = v; changes.push(`Cooldown → ${v}s`); }
+    if (!isNaN(v) && v >= 0) { config.safety.cooldownPerContact = v; changes.push(`Cooldown → ${v}s`); }
   }
   if (maxReplies !== undefined) {
     const v = parseInt(maxReplies);
-    if (v >= 1 && v <= 20) { config.safety.maxRepliesPerContact = v; changes.push(`MaxReplies → ${v}`); }
+    if (!isNaN(v) && v >= 0) { config.safety.maxRepliesPerContact = v; changes.push(`MaxReplies → ${v}`); }
   }
   if (contextual !== undefined) {
     config.ai.contextualMode = !!contextual;
@@ -224,7 +224,7 @@ app.post('/api/config', authDashboard, (req, res) => {
   }
   if (req.body.maxTokens !== undefined) {
     const v = parseInt(req.body.maxTokens);
-    if (v >= 200 && v <= 4096) { config.ai.maxTokens = v; changes.push(`MaxTokens \u2192 ${v}`); }
+    if (!isNaN(v) && v >= 0) { config.ai.maxTokens = v; changes.push(`MaxTokens \u2192 ${v}`); }
   }
   if (req.body.ignoreGroups !== undefined) {
     config.safety.ignoreGroups = !!req.body.ignoreGroups;
@@ -525,9 +525,14 @@ start();
 // ─── Keep-alive: ping self to prevent sleep ───
 if (config.keepAlive?.enabled !== false) {
   const keepAliveMs = (config.keepAlive?.intervalMinutes || 4) * 60 * 1000;
-  setInterval(() => {
-    const url = `http://localhost:${PORT}/health`;
-    require('http').get(url, () => {}).on('error', () => {});
+  setInterval(async () => {
+    try {
+      const url = `http://localhost:${PORT}/health`;
+      const response = await require('axios').get(url);
+      logger.debug(`[Keep-Alive] Ping OK: ${response.data.status}`);
+    } catch (err) {
+      logger.warn(`[Keep-Alive] Ping failed: ${err.message}`);
+    }
   }, keepAliveMs);
 }
 

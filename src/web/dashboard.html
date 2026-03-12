@@ -251,10 +251,10 @@ select.ctrl-select:hover{border-color:var(--border-h)}
       <div class="cfg-grid" id="el-cfg-edit">
         <div class="cfg-item"><span class="k">Owner Name</span><input class="cfg-input" id="cfg-name" placeholder="Name"></div>
         <div class="cfg-item"><span class="k">Timezone</span><input class="cfg-input" id="cfg-tz" placeholder="Asia/Jakarta"></div>
-        <div class="cfg-item"><span class="k">Reply Delay(s)</span><input class="cfg-input" id="cfg-delay" type="number" min="500" max="10000" step="500" placeholder="ms"></div>
-        <div class="cfg-item"><span class="k">Max Tokens</span><input class="cfg-input" id="cfg-tokens" type="number" min="200" max="4096" step="100" placeholder="tokens"></div>
-        <div class="cfg-item"><span class="k">Max Replies</span><input class="cfg-input" id="cfg-max" type="number" min="1" max="20" placeholder="per contact"></div>
-        <div class="cfg-item"><span class="k">Cooldown(m)</span><input class="cfg-input" id="cfg-cool" type="number" min="30" max="3600" step="30" placeholder="seconds"></div>
+        <div class="cfg-item"><span class="k">Reply Delay(ms)</span><input class="cfg-input" id="cfg-delay" type="number" min="0" step="100" placeholder="ms"></div>
+        <div class="cfg-item"><span class="k">Max Tokens</span><input class="cfg-input" id="cfg-tokens" type="number" min="0" step="50" placeholder="tokens"></div>
+        <div class="cfg-item"><span class="k">Max Replies</span><input class="cfg-input" id="cfg-max" type="number" min="0" placeholder="per contact"></div>
+        <div class="cfg-item"><span class="k">Cooldown(s)</span><input class="cfg-input" id="cfg-cool" type="number" min="0" step="10" placeholder="seconds"></div>
         <div class="cfg-item"><span class="k">Contextual AI</span><label class="toggle"><input type="checkbox" id="cfg-ctx"><span class="slider"></span></label></div>
         <div class="cfg-item"><span class="k">Chat History</span><label class="toggle"><input type="checkbox" id="cfg-hist"><span class="slider"></span></label></div>
         <div class="cfg-item"><span class="k">Ignore Groups</span><label class="toggle"><input type="checkbox" id="cfg-ig" onchange="quickCfg('ignoreGroups',this.checked)"><span class="slider"></span></label></div>
