@@ -750,7 +750,13 @@ autoWA/
 
 ## License
 
-[GPL-3.0](LICENSE) — free to use and modify. Must credit the original author and keep it open source.
+[GPL-3.0](LICENSE) — free to use and modify.
+
+If you use, modify, or redistribute this software:
+1. You MUST keep the copyright notice
+2. You MUST credit the original author
+3. You MUST open-source your modified version under the same license
+4. You CANNOT claim this software as originally yours
 
 Copyright (c) 2026 [xinnxz](https://github.com/xinnxz)
 
