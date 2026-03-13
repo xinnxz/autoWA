@@ -630,8 +630,8 @@ async function handle(sock, msg) {
     await sock.sendMessage(msg.from, { text: '🤖 _Sedang berpikir..._' });
     const aiText = await generateWithRotation(finalQuestion, 'prefix', [], imageBase64, contactId);
     
-    // Sesuaikan footer jika gambar digunakan
-    const footer = imageBase64 ? '_Powered by Gemini Vision_' : '_Powered by Groq + Gemini AI_';
+    // Identitas personal di footer
+    const footer = '_AutoWA by Luthfi Alfaridz — ReonTech_';
     await sock.sendMessage(msg.from, { text: `🤖 *AI Assistant*\n\n${aiText}\n\n─────────────────\n${footer}` });
     logger.outgoing(msg.from.split('@')[0], `[AI] ${aiText.substring(0, 50)}...`);
   } catch (err) {
