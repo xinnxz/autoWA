@@ -11,24 +11,21 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
 
-// Konfigurasi stream: 
+// Konfigurasi stream:
 // 1. Tampil cantik di Terminal (menggunakan pino-pretty)
-// 2. Tulis JSON ke file dengan rotasi otomatis (menggunakan pino-roll)
+// 2. Tulis JSON ke file log (menggunakan pino.destination bawaan — sync-safe, tanpa dependency tambahan)
+const logFilePath = path.join(logDir, 'app.log');
+
 const streams = [
-  { 
-    stream: require('pino-pretty')({ 
-      colorize: true, 
+  {
+    stream: require('pino-pretty')({
+      colorize: true,
       translateTime: 'SYS:HH:MM:ss',
-      ignore: 'pid,hostname,event' 
-    }) 
+      ignore: 'pid,hostname,event'
+    })
   },
   {
-    stream: require('pino-roll')({
-      file: path.join(logDir, 'app'),
-      size: '5m', // Rotasi jika file mencapai 5MB
-      extension: '.log',
-      frequency: 'daily', // Rotasi tiap hari juga
-    })
+    stream: pino.destination({ dest: logFilePath, sync: false, append: true })
   }
 ];
 
@@ -91,4 +88,3 @@ function outgoing(to, message) {
 function clearLogs() { recentLogs.length = 0; }
 
 module.exports = { info, warn, error, debug, incoming, outgoing, addSSEClient, removeSSEClient, getRecentLogs, clearLogs, _pino: logger };
-
