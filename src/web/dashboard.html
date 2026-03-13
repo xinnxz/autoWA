@@ -543,7 +543,21 @@ const saved=localStorage.getItem('autowa-theme');if(saved)setTheme(saved);
 
 
 // Init
-refreshData();initSSE();setInterval(refreshData,15000);
+refreshData();initSSE();
+
+// Dynamic Polling: 2s if disconnected (for fast QR sync), 15s if connected
+let pollTimer = null;
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  const interval = D.connected ? 15000 : 2000;
+  pollTimer = setInterval(async () => {
+    const wasConnected = D.connected;
+    await refreshData();
+    // If connection state changed, restart polling with new interval
+    if (wasConnected !== D.connected) startPolling();
+  }, interval);
+}
+startPolling();
 </script>
 </body>
 </html>
