@@ -30,6 +30,24 @@ let isConnected = false;
 
 // ─── Express server (untuk QR di cloud + health check + dashboard) ───
 const app = express();
+const session = require('express-session');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const path = require('path');
+
+// JSON body parser
+app.use(express.json());
+
+// ─── Session Setup ───
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'autowa-secret-' + (process.env.OWNER_NUMBER || 'default'),
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production', // HTTPS di production (Koyeb)
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 hari
+  }
+}));
 
 // Health check endpoint (dibutuhkan Koyeb)
 app.get('/health', (req, res) => {
@@ -40,21 +58,48 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ─── Auth Routes ───
+app.get('/login', (req, res) => {
+  // Jika sudah login, redirect ke dashboard
+  if (req.session?.authenticated) return res.redirect('/dashboard');
+  res.sendFile(path.join(__dirname, 'src', 'web', 'login.html'));
+});
+
+// Endpoint dipanggil login.html untuk mengecek apakah Google OAuth aktif
+app.get('/auth/check', (req, res) => {
+  res.json({ googleEnabled: false }); 
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/login');
+  });
+});
+
 // ─── Dashboard Auth middleware ───
+// Mendukung 2 cara autentikasi:
+// 1. Session cookie
+// 2. Query parameter ?key=OWNER_NUMBER & Header X-Auth-Key
 function authDashboard(req, res, next) {
+  // 1. Cek session
+  if (req.session?.authenticated) return next();
+  
+  // 2. Cek key
   const key = req.query.key || req.headers['x-auth-key'] || '';
   const ownerNumber = process.env.OWNER_NUMBER || '';
-  if (!ownerNumber || key !== ownerNumber) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (ownerNumber && key === ownerNumber) {
+    req.session.authenticated = true; // Set session agar diingat
+    return next();
   }
-  next();
+  
+  // 3. Tidak terautentikasi
+  if (req.headers.accept?.includes('text/html')) {
+    return res.redirect('/login');
+  }
+  return res.status(401).json({ error: 'Unauthorized' });
 }
 
-// JSON body parser
-app.use(express.json());
-
-// ─── Dashboard page ───
-const path = require('path');
+// ─── Static files & Dashboard page ───
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.get('/dashboard', authDashboard, (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'web', 'dashboard.html'));

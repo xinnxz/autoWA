@@ -61,7 +61,7 @@ const toolsSchema = [
 ];
 
 // Eksekusi tool calls
-async function executeTool(name, argsObj) {
+async function executeTool(name, argsObj, context) {
   try {
     if (name === 'getWeather') {
       const loc = argsObj.location;
@@ -74,7 +74,6 @@ async function executeTool(name, argsObj) {
     if (name === 'searchWikipedia') {
       const query = argsObj.query;
       logger.info(`[Tool] Mencari Wikipedia untuk: ${query}`);
-      // Sanitasi query dengan mengambil kata pertama/gabungan yang paling relevan (Wikipedia butuh exact/close match yg spesifik)
       const qSafe = encodeURIComponent(query.replace(/ /g, '_'));
       const res = await axios.get(`https://id.wikipedia.org/api/rest_v1/page/summary/${qSafe}`, { 
         headers: { 'User-Agent': 'AutoWABot/1.0' },
@@ -85,9 +84,8 @@ async function executeTool(name, argsObj) {
 
     if (name === 'saveUserFact') {
       const { fact_key, fact_value } = argsObj;
-      // context is passed from callGroq
-      const context = arguments[2] || {};
-      const { contactId, userProfiles, saveStore } = context;
+      const ctx = context || {};
+      const { contactId, userProfiles, saveStore } = ctx;
 
       if (!contactId || !userProfiles) {
         return `Error internal: Sistem memori tidak tersedia untuk pengguna ini.`;

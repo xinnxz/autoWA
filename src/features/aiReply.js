@@ -397,38 +397,45 @@ ${P.closingRule(ownerName)}`;
   }
   messages.push({ role: 'user', content: prompt });
 
-  // Coba panggil dengan tools terlebih dahulu, fallback tanpa tools jika model tidak support
+  // ─── TOOLS HANYA UNTUK MODE PREFIX (!ai) ───
+  // Mode contextual (auto-reply) TIDAK pakai tools agar stabil
+  const useTools = (mode === 'prefix');
+
+  const requestParams = {
+    model: getOverrides().model || config.ai.model || 'llama-3.3-70b-versatile',
+    messages,
+    max_tokens: config.ai.maxTokens || 500,
+    temperature: 0.6,
+  };
+
+  // Tambahkan tools hanya untuk !ai command
+  if (useTools) {
+    requestParams.tools = toolsSchema;
+    requestParams.tool_choice = 'auto';
+  }
+
   let completion;
-  let toolsSupported = true;
-  
   try {
-    completion = await client.chat.completions.create({
-      model: getOverrides().model || config.ai.model || 'llama-3.3-70b-versatile',
-      messages,
-      max_tokens: config.ai.maxTokens || 500,
-      temperature: 0.6,
-      tools: toolsSchema,
-      tool_choice: 'auto'
-    });
-  } catch (toolErr) {
-    // Jika error karena model tidak support tools, coba ulang TANPA tools
-    logger.warn(`[AI] Model tidak support tools, retry tanpa tools: ${toolErr.message}`);
-    toolsSupported = false;
-    completion = await client.chat.completions.create({
-      model: getOverrides().model || config.ai.model || 'llama-3.3-70b-versatile',
-      messages,
-      max_tokens: config.ai.maxTokens || 500,
-      temperature: 0.6,
-    });
+    completion = await client.chat.completions.create(requestParams);
+  } catch (firstErr) {
+    // Jika gagal dengan tools, coba ulang tanpa tools
+    if (useTools) {
+      logger.warn(`[AI] Gagal dengan tools, retry tanpa: ${firstErr.message}`);
+      delete requestParams.tools;
+      delete requestParams.tool_choice;
+      completion = await client.chat.completions.create(requestParams);
+    } else {
+      throw firstErr; // Mode contextual gagal → lempar error ke atas
+    }
   }
 
   const responseMsg = completion.choices[0]?.message;
   let reply = responseMsg?.content || '';
 
-  // ─── TOOL CALLING HANDLER (hanya jika tools didukung) ───
-  if (toolsSupported && responseMsg?.tool_calls && responseMsg.tool_calls.length > 0) {
-    logger.debug(`[AI] Memanggil ${responseMsg.tool_calls.length} alat eksternal...`);
-    messages.push(responseMsg); // Tambahkan pesan AI (yang mau memanggil tool) ke history log
+  // ─── TOOL CALLING HANDLER ───
+  if (useTools && responseMsg?.tool_calls && responseMsg.tool_calls.length > 0) {
+    logger.info(`[AI] Memanggil ${responseMsg.tool_calls.length} alat eksternal...`);
+    messages.push(responseMsg);
     
     for (const toolCall of responseMsg.tool_calls) {
       const functionName = toolCall.function.name;
@@ -440,11 +447,9 @@ ${P.closingRule(ownerName)}`;
         continue;
       }
       
-      // Eksekusi tool 
       const toolContext = { contactId, userProfiles, saveStore: () => store.save() };
       const toolResult = await executeTool(functionName, argsObj, toolContext);
       
-      // Laporkan hasil tool ke AI
       messages.push({
         role: "tool",
         tool_call_id: toolCall.id,
@@ -452,7 +457,6 @@ ${P.closingRule(ownerName)}`;
       });
     }
 
-    // Panggil ulang AI dengan tambahan konteks hasil Web Search / Cuaca
     const secondCall = await client.chat.completions.create({
       model: getOverrides().model || config.ai.model || 'llama-3.3-70b-versatile',
       messages,
@@ -668,7 +672,8 @@ async function handleContextual(sock, msg, opts = {}) {
     await sock.sendMessage(msg.from, sendOpts);
     logger.outgoing(msg.from.split('@')[0], `[AI-Context] ${aiText.substring(0, 50)}...`);
   } catch (err) {
-    logger.error('Contextual AI error', err);
+    logger.error(`Contextual AI error: ${err.message}`, err);
+    logger.warn(`[DEBUG] Error stack: ${err.stack?.split('\n')[1]?.trim() || 'unknown'}`);
     const messages = config.awayMode.messages;
     const fallback = messages[Math.floor(Math.random() * messages.length)];
     const sendOpts = { text: fallback };
