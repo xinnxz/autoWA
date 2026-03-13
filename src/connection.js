@@ -172,7 +172,8 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
       };
 
       // Forward to handler if callback exists
-      if (onMessage && messageData.text) {
+      // Allow if there is text OR if it's a media message (image/video)
+      if (onMessage && (messageData.text || msg.message?.imageMessage || msg.message?.videoMessage)) {
         try {
           await onMessage(sock, messageData);
         } catch (err) {

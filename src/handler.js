@@ -109,6 +109,9 @@ async function handleMessage(sock, msg) {
   // ─── IGNORE: Status broadcast ───
   if (msg.from === 'status@broadcast') return;
 
+  // Pre-calculate display text for logs/inbox
+  const displayMsg = msg.text || (msg.raw?.message?.imageMessage ? '[Gambar]' : (msg.raw?.message?.videoMessage ? '[Video]' : ''));
+
   // ─── GROUP HANDLING ───
   // Group messages: check if group is enabled, otherwise ignore
   if (msg.isGroup) {
@@ -138,7 +141,7 @@ async function handleMessage(sock, msg) {
     if (!botIsAway) return;
 
     // Log & cooldown (pakai group ID)
-    addToInbox(msg.from, msg.name || 'Unknown', msg.text);
+    addToInbox(msg.from, msg.name || 'Unknown', displayMsg);
     if (!canReply(msg.from)) return;
 
     await sleep(safety.replyDelay);
@@ -177,8 +180,8 @@ async function handleMessage(sock, msg) {
     return;
   }
 
-  logger.incoming(msg.from.split('@')[0], msg.text);
-  trackContact(msg.from, msg.name, msg.text);
+  logger.incoming(msg.from.split('@')[0], displayMsg);
+  trackContact(msg.from, msg.name, displayMsg);
 
   // ─── CEK: Apakah bot sedang away? ───
   const botIsAway = isAway() || isScheduledAway();
@@ -191,7 +194,7 @@ async function handleMessage(sock, msg) {
   // ─── Bot sedang AWAY → proses auto-reply ───
 
   // Log pesan ke inbox (untuk rangkuman nanti)
-  addToInbox(msg.from, msg.name, msg.text);
+  addToInbox(msg.from, msg.name, displayMsg);
 
   // Cek cooldown
   if (!canReply(msg.from)) {
