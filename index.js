@@ -1,5 +1,7 @@
 // ============================================
 // index.js — Entry Point (Cloud-Ready Version)
+// Copyright (c) 2026 Luthfi Alfaridz — Founder of ReonTech
+// Licensed under GPL-3.0
 // ============================================
 // Penjelasan:
 // Entry point yang support both:

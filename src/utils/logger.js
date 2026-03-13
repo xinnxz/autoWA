@@ -1,5 +1,7 @@
 // ============================================
 // src/utils/logger.js — Professional Logging System + SSE Broadcast
+// Copyright (c) 2026 Luthfi Alfaridz — Founder of ReonTech
+// Licensed under GPL-3.0
 // ============================================
 const pino = require('pino');
 const path = require('path');

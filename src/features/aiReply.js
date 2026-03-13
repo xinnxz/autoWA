@@ -1,5 +1,7 @@
 // ============================================
 // src/features/aiReply.js — Multi-AI with Key Rotation
+// Copyright (c) 2026 Luthfi Alfaridz — Founder of ReonTech
+// Licensed under GPL-3.0
 // ============================================
 // Penjelasan:
 // Support 2 AI provider dengan rotasi key masing-masing:
