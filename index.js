@@ -31,8 +31,6 @@ let isConnected = false;
 // ─── Express server (untuk QR di cloud + health check + dashboard) ───
 const app = express();
 const session = require('express-session');
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const path = require('path');
 
 // JSON body parser
