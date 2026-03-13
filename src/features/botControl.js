@@ -19,7 +19,7 @@
 
 const config = require('../../config.js');
 const logger = require('../utils/logger');
-const { getLocale, getStylePresets } = require('../utils/locale');
+const { getLocale, getStylePresets, setLocale } = require('../utils/locale');
 const store = require('../utils/store');
 
 // ─── State bot (disimpan di memory) ───
@@ -142,21 +142,18 @@ ${L.helpControl}
 ${L.helpConfig}
 │ !style <${locale.meta.code === 'id' ? 'gaya' : 'style'}> — ${locale.meta.code === 'id' ? 'Ganti gaya bahasa' : 'Change reply style'}
 │ !model <model> — ${locale.meta.code === 'id' ? 'Ganti model AI' : 'Change AI model'}
+│ !lang <${locale.meta.code === 'id' ? 'kode' : 'code'}> — ${locale.meta.code === 'id' ? 'Ganti bahasa bot' : 'Change bot language'}
 │ !group — ${locale.meta.code === 'id' ? 'Kontrol bot di group' : 'Control bot in groups'}
+│ !history — ${locale.meta.code === 'id' ? 'Kelola riwayat chat AI' : 'Manage AI chat history'}
 
 ${L.helpStyle}
 │ ${styleNames}
 │ ${L.styleCustomHint}
 
 ${L.helpModel}
-│ gpt — GPT-OSS 120B
-│ gpt20 — GPT-OSS 20B
-│ llama — Llama 3.3 70B
-│ llama8 — Llama 3.1 8B
-│ qwen — Qwen3 32B
-│ kimi — Kimi K2
-│ maverick — Llama 4 Maverick
-│ scout — Llama 4 Scout
+│ gpt, gpt20, llama, llama8, qwen, kimi, maverick, scout
+
+🌐 *Languages (id, en, es, ar, pt, ja, hi, ko, fr, ms)*
 
 ${L.helpFooter(currentStyle, currentModel)}`;
     await sock.sendMessage(msg.from, { text: helpText });
@@ -351,6 +348,35 @@ ${L.helpFooter(currentStyle, currentModel)}`;
     const alias = MODEL_ALIASES[input] ? input : null;
     await sock.sendMessage(msg.from, { text: `${L.modelChanged(resolvedModel, alias)}\n\n${L.modelLive}` });
     logger.info(`AI model: ${resolvedModel}`);
+    return true;
+  }
+
+  // ─── !lang → Ganti bahasa bot ───
+  if (text.startsWith('!lang')) {
+    const args = text.replace('!lang', '').trim();
+    const availableLangs = ['id', 'en', 'es', 'ar', 'pt', 'ja', 'hi', 'ko', 'fr', 'ms'];
+
+    if (!args) {
+      const locale = getLocale();
+      await sock.sendMessage(msg.from, { 
+        text: `🌐 *Language Selection*\n\nCurrent: *${locale.meta.name} (${locale.meta.code})*\n\nUsage: *!lang <kode>*\nExample: *!lang id*\n\nAvailable:\n${availableLangs.join(', ')}` 
+      });
+      return true;
+    }
+
+    if (!availableLangs.includes(args)) {
+      await sock.sendMessage(msg.from, { text: `❌ Language code *${args}* not found.\n\nAvailable: ${availableLangs.join(', ')}` });
+      return true;
+    }
+
+    const newLocale = setLocale(args);
+    const successMsg = args === 'id' 
+      ? `✅ Bahasa bot berhasil diubah ke: *${newLocale.meta.name}*`
+      : `✅ Bot language successfully changed to: *${newLocale.meta.name}*`;
+    
+    await sock.sendMessage(msg.from, { text: successMsg });
+    logger.info(`Language changed to: ${args}`);
+    store.save(); // Simpan perubahan bahasa ke store
     return true;
   }
 

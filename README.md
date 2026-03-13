@@ -538,24 +538,28 @@ Send commands to **yourself** in WhatsApp (personal chat). Only the owner can ex
 |---------|-------------|
 | `!ai <question>` | Ask the AI directly and get a response |
 | `!style <name>` | Change reply style (santai, formal, gaul, campur, or any text) |
-| `!model <name>` | Change AI model (e.g., `!model llama-3.3-70b-versatile`) |
+| `!model <name>` | Change AI model (e.g., `!model llama`) |
+| `!lang <code|reset>` | Change bot language (id, en, es, etc.) |
+| `!history` | Show AI memory status |
 | `!history clear` | Clear AI conversation memory |
 
 ### Group
 
 | Command | Description |
 |---------|-------------|
+| `!group` | Show current group status |
 | `!group on` | Enable bot in current group |
 | `!group off` | Disable bot in current group |
 | `!group style <name>` | Set custom reply style for the group |
-| `!group list` | Show all active groups |
-| `!group reset` | Disable bot in all groups |
+| `!group list` | Show all active groups (can be used in private) |
+| `!group reset` | Disable bot in all groups (can be used in private) |
 
 ### System
 
 | Command | Description |
 |---------|-------------|
 | `!logout` | Disconnect WhatsApp (requires re-scan) |
+| `!logout confirm` | Confirm WhatsApp logout |
 
 ---
 

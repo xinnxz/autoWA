@@ -48,4 +48,13 @@ function getStyle(styleName) {
   return locale.styles[styleName] || null;
 }
 
-module.exports = { getLocale, getStylePresets, getStyle };
+/**
+ * Set bahasa secara dinamis
+ */
+function setLocale(lang) {
+  _locale = null; // Clear cache
+  config.language = lang;
+  return getLocale();
+}
+
+module.exports = { getLocale, getStylePresets, getStyle, setLocale };
