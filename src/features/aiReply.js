@@ -204,7 +204,11 @@ function getAvailableKey(provider) {
   const now = Date.now();
   for (let i = 0; i < p.keys.length; i++) {
     const idx = (p.currentIndex + i) % p.keys.length;
-    if (now > p.cooldowns[idx]) return idx;
+    if (now > p.cooldowns[idx]) {
+      // Ditemukan key yang tidak cooldown. Langsung force geser currentIndex untuk request BERIKUTNYA.
+      p.currentIndex = (idx + 1) % p.keys.length;
+      return idx;
+    }
   }
   return -1;
 }
@@ -579,18 +583,22 @@ async function generateWithRotation(prompt, mode = 'prefix', history = [], image
         aiMetrics.avgLatency = Math.round(aiMetrics.latencyHistory.reduce((a,b)=>a+b,0) / aiMetrics.latencyHistory.length);
         logger.debug(`AI response: ${latency}ms (${p.name})`);
 
-        // Update index untuk round-robin
-        p.currentIndex = (keyIdx + 1) % p.keys.length;
         return result;
       } catch (err) {
         lastError = err;
         const errMsg = err.message || '';
-        if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota') || errMsg.includes('rate_limit')) {
+        // Cek apakah error rate limit, quota exceeded, atau akun diblokir (organization_restricted)
+        const isRateLimit = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota') || errMsg.includes('rate_limit');
+        const isBanned = errMsg.includes('organization_restricted') || errMsg.includes('unauthorized') || errMsg.includes('401') || errMsg.includes('403');
+        
+        if (isRateLimit || isBanned) {
+          logger.warn(`[AI] Key indeks ${keyIdx} (${p.name}) bermasalah: ${isBanned ? 'Terblokir/Invalid' : 'Rate Limit'}. Mencoba key selanjutnya...`);
           markLimited(providerName, keyIdx);
-          continue;
+          continue; // Lanjut ke key berikutnya
         }
+        
         // Error lain → skip ke provider berikutnya
-        logger.error(`${p.name} error (bukan rate limit):`, err);
+        logger.error(`${p.name} error (bukan rate limit/ban):`, err);
         break;
       }
     }
