@@ -397,26 +397,48 @@ ${P.closingRule(ownerName)}`;
   }
   messages.push({ role: 'user', content: prompt });
 
-  const completion = await client.chat.completions.create({
-    model: getOverrides().model || config.ai.model || 'llama-3.3-70b-versatile',
-    messages,
-    max_tokens: config.ai.maxTokens || 500,
-    temperature: 0.6,
-    tools: toolsSchema,
-    tool_choice: 'auto'
-  });
+  // Coba panggil dengan tools terlebih dahulu, fallback tanpa tools jika model tidak support
+  let completion;
+  let toolsSupported = true;
+  
+  try {
+    completion = await client.chat.completions.create({
+      model: getOverrides().model || config.ai.model || 'llama-3.3-70b-versatile',
+      messages,
+      max_tokens: config.ai.maxTokens || 500,
+      temperature: 0.6,
+      tools: toolsSchema,
+      tool_choice: 'auto'
+    });
+  } catch (toolErr) {
+    // Jika error karena model tidak support tools, coba ulang TANPA tools
+    logger.warn(`[AI] Model tidak support tools, retry tanpa tools: ${toolErr.message}`);
+    toolsSupported = false;
+    completion = await client.chat.completions.create({
+      model: getOverrides().model || config.ai.model || 'llama-3.3-70b-versatile',
+      messages,
+      max_tokens: config.ai.maxTokens || 500,
+      temperature: 0.6,
+    });
+  }
 
   const responseMsg = completion.choices[0]?.message;
   let reply = responseMsg?.content || '';
 
-  // ─── TOOL CALLING HANDLER ───
-  if (responseMsg?.tool_calls && responseMsg.tool_calls.length > 0) {
+  // ─── TOOL CALLING HANDLER (hanya jika tools didukung) ───
+  if (toolsSupported && responseMsg?.tool_calls && responseMsg.tool_calls.length > 0) {
     logger.debug(`[AI] Memanggil ${responseMsg.tool_calls.length} alat eksternal...`);
     messages.push(responseMsg); // Tambahkan pesan AI (yang mau memanggil tool) ke history log
     
     for (const toolCall of responseMsg.tool_calls) {
       const functionName = toolCall.function.name;
-      const argsObj = JSON.parse(toolCall.function.arguments);
+      let argsObj;
+      try {
+        argsObj = JSON.parse(toolCall.function.arguments);
+      } catch (parseErr) {
+        logger.warn(`[AI] Gagal parse argumen tool ${functionName}: ${parseErr.message}`);
+        continue;
+      }
       
       // Eksekusi tool 
       const toolContext = { contactId, userProfiles, saveStore: () => store.save() };
