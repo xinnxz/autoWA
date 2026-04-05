@@ -39,6 +39,7 @@ let _state = {
   configOverrides: null, // Config changes from dashboard
   botState: null,        // Away mode state
   userProfiles: null,    // User long-term memory facts
+  presenceState: null,   // Smart presence detection state
 };
 
 let _saveTimer = null;
@@ -105,6 +106,14 @@ function serialize() {
   // Away mode state
   if (_state.botState) {
     data.botState = { awayMode: _state.botState.awayMode };
+  }
+
+  // Smart presence state
+  if (_state.presenceState) {
+    data.presenceState = {
+      lastActive: _state.presenceState.lastActive,
+      isOwnerActive: _state.presenceState.isOwnerActive,
+    };
   }
 
   return data;
@@ -243,6 +252,13 @@ function load() {
         _state.botState.awayMode = data.botState.awayMode;
         logger.info(`[Store] Restored away mode: ${data.botState.awayMode ? 'ON' : 'OFF'}`);
       }
+    }
+
+    // Restore smart presence state
+    if (data.presenceState && _state.presenceState) {
+      if (data.presenceState.lastActive) _state.presenceState.lastActive = data.presenceState.lastActive;
+      if (data.presenceState.isOwnerActive !== undefined) _state.presenceState.isOwnerActive = data.presenceState.isOwnerActive;
+      logger.info(`[Store] Restored presence state (lastActive: ${data.presenceState.lastActive ? 'yes' : 'none'})`);
     }
 
     logger.info(`[Store] State loaded from ${data._savedAt || 'unknown time'}`);

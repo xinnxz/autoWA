@@ -23,7 +23,7 @@
 const config = require('../config.js');
 const logger = require('./utils/logger');
 const { trackContact } = require('./utils/contacts');
-const { handleCommand, isAway, addToInbox, isGroupEnabled, getGroupStyle } = require('./features/botControl');
+const { handleCommand, isAway, addToInbox, isGroupEnabled, getGroupStyle, botState } = require('./features/botControl');
 const aiReply = require('./features/aiReply');
 
 // ─── Cooldown tracker ───
@@ -67,10 +67,27 @@ function isScheduledAway() {
   const sleepStart = startH * 60 + startM;
   const sleepEnd = endH * 60 + endM;
 
+  let inSchedule;
   if (sleepStart > sleepEnd) {
-    return currentTime >= sleepStart || currentTime < sleepEnd;
+    inSchedule = currentTime >= sleepStart || currentTime < sleepEnd;
+  } else {
+    inSchedule = currentTime >= sleepStart && currentTime < sleepEnd;
   }
-  return currentTime >= sleepStart && currentTime < sleepEnd;
+
+  // Kalau sudah KELUAR dari jadwal tidur → reset manualOverride
+  // supaya schedule berikutnya bisa jalan normal lagi
+  if (!inSchedule && botState.manualOverride) {
+    botState.manualOverride = false;
+    logger.debug('Schedule period ended → manualOverride reset');
+  }
+
+  // Kalau owner sudah manual !on (manualOverride = true),
+  // jangan paksa away meskipun masih dalam jadwal tidur
+  if (inSchedule && botState.manualOverride) {
+    return false; // Owner bilang !on, kita hormati
+  }
+
+  return inSchedule;
 }
 
 /**

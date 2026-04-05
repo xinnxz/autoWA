@@ -162,6 +162,13 @@ module.exports = {
     status: 'Status',
     nonaktif: 'Disabled',
     commandsOnly: '_Commands are owner-only._',
+
+    // Smart Presence
+    autoHeader: '🤖 *Smart Presence*',
+    autoEnabled: '✅ Smart presence ON — bot detects your activity automatically.',
+    autoDisabled: '⏸️ Smart presence OFF — use !on/!off manually.',
+    autoTimeout: (m) => `⏱️ Timeout: ${m} minutes`,
+    autoLastActive: (t) => `📡 Last active: ${t}`,
   },
 
   // ─── Web Page ───

@@ -28,6 +28,7 @@ const botState = {
   dndUntil: null,                       // Timestamp kapan DND berakhir (null = tidak DND)
   dndTimer: null,                       // Timer reference untuk cancel DND
   awayReason: '',                       // Alasan away (misal: 'tidur', 'meeting', 'kuliah')
+  manualOverride: false,                // true = owner sudah manual !on/!off, schedule tidak boleh override
 };
 
 // ─── Group settings (per-group on/off + custom style) ───
@@ -132,6 +133,7 @@ async function handleCommand(sock, msg) {
 ${L.helpControl}
 │ !off — ${locale.meta.code === 'id' ? 'Aktifkan away mode' : 'Turn on away mode'}
 │ !on — ${locale.meta.code === 'id' ? 'Matikan away mode' : 'Turn off away mode'}
+│ !auto — ${locale.meta.code === 'id' ? 'Toggle smart presence (auto deteksi)' : 'Toggle smart presence (auto detect)'}
 │ !dnd <waktu> — ${locale.meta.code === 'id' ? 'Away sementara (!dnd 2h, !dnd 30m)' : 'Temporary away (!dnd 2h, !dnd 30m)'}
 │ !status — ${locale.meta.code === 'id' ? 'Cek status bot' : 'Check bot status'}
 │ !inbox — ${locale.meta.code === 'id' ? 'Lihat chat masuk saat away' : 'View messages while away'}
@@ -163,6 +165,7 @@ ${L.helpFooter(currentStyle, currentModel)}`;
   // ─── !off → Aktifkan away mode ───
   if (text === '!off') {
     botState.awayMode = true;
+    botState.manualOverride = false; // !off = away aktif, schedule boleh jalan
     const L = getLocale().cmd;
     const style = runtimeOverrides.replyStyle || config.ai.replyStyle || 'santai';
     await sock.sendMessage(msg.from, { 
@@ -176,6 +179,7 @@ ${L.helpFooter(currentStyle, currentModel)}`;
   // ─── !on → Matikan away mode ───
   if (text === '!on') {
     botState.awayMode = false;
+    botState.manualOverride = true; // Manual override: schedule tidak boleh timpa keputusan owner
     botState.dndUntil = null; // Cancel DND juga
     if (botState.dndTimer) {
       clearTimeout(botState.dndTimer);
@@ -186,7 +190,7 @@ ${L.helpFooter(currentStyle, currentModel)}`;
     await sock.sendMessage(msg.from, { 
       text: `${L.awayOff}\n\n${L.awayOffDetail}` 
     });
-    logger.info('Away mode OFF');
+    logger.info('Away mode OFF (manual override — schedule bypassed)');
     return true;
   }
 
@@ -251,6 +255,28 @@ ${L.helpFooter(currentStyle, currentModel)}`;
       ? `${schedule.sleepStart} - ${schedule.sleepEnd} ${schedule.timezone}` 
       : 'Disabled';
 
+    // Smart Presence info
+    let smartInfo = '';
+    try {
+      const { getPresenceState } = require('./presenceDetector');
+      const sp = getPresenceState();
+      const spStatus = sp.enabled ? '🟢 ON' : '🔴 OFF';
+      smartInfo = `\n│ Smart Presence: ${spStatus}`;
+      if (sp.enabled) {
+        smartInfo += ` (${sp.timeout}m timeout)`;
+        if (sp.lastActive) {
+          const ago = Math.floor((Date.now() - sp.lastActive) / 1000);
+          if (ago < 60) smartInfo += `\n│ Last active: ${ago}s ago`;
+          else if (ago < 3600) smartInfo += `\n│ Last active: ${Math.floor(ago / 60)}m ago`;
+          else smartInfo += `\n│ Last active: ${Math.floor(ago / 3600)}h ago`;
+        }
+        smartInfo += `\n│ Owner: ${sp.isOwnerActive ? '🟢 Active' : '🔴 Inactive'}`;
+      }
+      if (botState.manualOverride) {
+        smartInfo += `\n│ Manual override: ⚠️ Active (!auto on to reset)`;
+      }
+    } catch(e) {}
+
     await sock.sendMessage(msg.from, { 
       text: `📊 *AutoWA Bot Status*\n\n` +
         `│ Status: ${awayStatus}${dndInfo}\n` +
@@ -258,7 +284,8 @@ ${L.helpFooter(currentStyle, currentModel)}`;
         `│ Inbox: ${inbox.length} messages\n` +
         `│ Memory: ${memMB} MB\n` +
         `│ Uptime: ${formatUptime(process.uptime())}\n` +
-        `│ Schedule: ${scheduleStr}\n\n` +
+        `│ Schedule: ${scheduleStr}` +
+        `${smartInfo}\n\n` +
         `_Type !help for all commands_`
     });
     return true;
@@ -461,6 +488,81 @@ ${L.helpFooter(currentStyle, currentModel)}`;
 
     await sock.sendMessage(msg.from, {
       text: `🧠 *Chat History*\n\nAI menyimpan riwayat percakapan agar jawaban lebih nyambung.\n\n│ !history clear — Hapus semua riwayat\n\n_History otomatis dihapus setelah ${config.ai.chatHistory?.maxAge || 30} menit._`
+    });
+    return true;
+  }
+
+  // ─── !auto → Smart Presence Control ───
+  if (text.startsWith('!auto')) {
+    const args = text.replace('!auto', '').trim();
+
+    // !auto on → Aktifkan smart presence + reset manual override
+    if (args === 'on') {
+      config.smartPresence.enabled = true;
+      botState.manualOverride = false;
+
+      // Biarkan presenceDetector ambil alih
+      try {
+        const { resetOverride } = require('./presenceDetector');
+        resetOverride();
+      } catch(e) {}
+
+      await sock.sendMessage(msg.from, { 
+        text: `🤖 *Smart Presence ON!*\n\nBot will automatically detect your activity.\n• Active → bot stays silent\n• Inactive ${config.smartPresence.inactivityTimeout}m → auto-reply ON\n\n_Manual !on/!off still works as override._` 
+      });
+      logger.info('[SmartPresence] Enabled via !auto on');
+      store.save();
+      return true;
+    }
+
+    // !auto off → Matikan smart presence, full manual mode
+    if (args === 'off') {
+      config.smartPresence.enabled = false;
+      await sock.sendMessage(msg.from, { 
+        text: `⏸️ *Smart Presence OFF!*\n\nAutomatic detection disabled.\nUse !on / !off to control manually.` 
+      });
+      logger.info('[SmartPresence] Disabled via !auto off');
+      store.save();
+      return true;
+    }
+
+    // !auto <number> → Ubah timeout
+    const num = parseInt(args);
+    if (!isNaN(num) && num > 0 && num <= 60) {
+      config.smartPresence.inactivityTimeout = num;
+      await sock.sendMessage(msg.from, { 
+        text: `⏱️ *Timeout updated to ${num} minutes!*\n\nBot will wait ${num}m of inactivity before enabling away mode.` 
+      });
+      logger.info(`[SmartPresence] Timeout changed to ${num}m`);
+      store.save();
+      return true;
+    }
+
+    // !auto (tanpa args) → Tampilkan status
+    let spInfo = '';
+    try {
+      const { getPresenceState } = require('./presenceDetector');
+      const sp = getPresenceState();
+      const lastActiveStr = sp.lastActive
+        ? new Date(sp.lastActive).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: config.timezone || 'Asia/Jakarta' })
+        : 'No activity yet';
+      spInfo = `\n\n│ Status: ${sp.enabled ? '🟢 Active' : '🔴 Disabled'}` +
+        `\n│ Timeout: ${sp.timeout} minutes` +
+        `\n│ Owner: ${sp.isOwnerActive ? '🟢 Active now' : '🔴 Inactive'}` +
+        `\n│ Last active: ${lastActiveStr}` +
+        `\n│ Manual override: ${botState.manualOverride ? '⚠️ Yes' : '✅ No'}`;
+    } catch(e) {
+      spInfo = '\n\n_Could not load presence state._';
+    }
+
+    await sock.sendMessage(msg.from, { 
+      text: `🤖 *Smart Presence*\n` +
+        `\nAuto-detect your WhatsApp activity.` +
+        `${spInfo}\n\n` +
+        `*Commands:*\n` +
+        `│ !auto on — Enable smart presence\n` +
+        `│ !auto off — Disable (manual mode)\n` +
+        `│ !auto <1-60> — Change timeout (minutes)` 
     });
     return true;
   }

@@ -51,6 +51,20 @@ module.exports = {
     autoReply: true,            // Fitur keyword auto-reply
   },
 
+  // ─── SMART PRESENCE ───
+  // Bot otomatis deteksi apakah kamu aktif di WhatsApp
+  // Kalau aktif → bot diam. Kalau X menit ga aktif → bot away.
+  // Ga perlu ketik !on / !off manual lagi!
+  smartPresence: {
+    enabled: true,              // true = deteksi otomatis, false = manual !on/!off aja
+    inactivityTimeout: 5,       // Menit. Setelah X menit ga ada aktivitas → away mode ON
+    signals: {
+      readReceipts: true,       // Deteksi saat kamu baca pesan (paling akurat)
+      outgoingMessages: true,   // Deteksi saat kamu kirim pesan sendiri
+      presenceUpdates: true,    // Deteksi presence online/typing (terbatas)
+    },
+  },
+
   // ─── KEYWORD AUTO-REPLY ───
   // Reply otomatis berdasarkan kata kunci tertentu
   // Ini prioritas pertama sebelum AI reply

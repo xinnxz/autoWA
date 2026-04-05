@@ -72,7 +72,7 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
     _origWarn.apply(console, args);
   };
 
-  sock.ev.on('connection.update', (update) => {
+  sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
@@ -108,6 +108,18 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
       if (sock._qrTimer) { clearInterval(sock._qrTimer); sock._qrTimer = null; }
       const name = sock.user?.name || sock.user?.id || 'Unknown';
       if (onConnected) onConnected(name);
+
+      // ─── Smart Presence: setup activity detection ───
+      // 1. Set bot presence ke 'unavailable' agar push notif HP owner tetap muncul
+      //    (default Baileys = 'available', yang bisa suppress notif)
+      // 2. Register event listeners untuk deteksi aktivitas owner
+      try {
+        await sock.sendPresenceUpdate('unavailable');
+        const { registerEvents } = require('./features/presenceDetector');
+        registerEvents(sock);
+      } catch (err) {
+        logger.warn(`[SmartPresence] Setup error: ${err.message}`);
+      }
     }
 
     if (connection === 'close') {

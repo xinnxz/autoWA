@@ -130,6 +130,13 @@ app.get('/api/stats', authDashboard, (req, res) => {
 
   const metrics = getAIMetrics();
 
+  // Smart Presence data
+  let smartPresence = { enabled: false, timeout: 5, lastActive: null, isOwnerActive: false };
+  try {
+    const { getPresenceState } = require('./src/features/presenceDetector');
+    smartPresence = getPresenceState();
+  } catch(e) {}
+
   res.json({
     connected: isConnected,
     uptime: process.uptime(),
@@ -165,6 +172,8 @@ app.get('/api/stats', authDashboard, (req, res) => {
     version: '2.0.0',
     stylePresets: (() => { try { return require('./src/utils/locale').getStylePresets(); } catch(e) { return ['santai','formal','gaul','campur']; } })(),
     availableLanguages: ['id','en','es','ar','pt','ja','hi','ko','fr','ms'],
+    smartPresence,
+    manualOverride: botState.manualOverride || false,
   });
 });
 
