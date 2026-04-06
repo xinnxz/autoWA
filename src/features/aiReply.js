@@ -634,13 +634,13 @@ async function handle(sock, msg) {
   const contactId = msg.from;
 
   try {
-    await sock.sendMessage(msg.from, { text: '🤖 _Sedang berpikir..._' });
+    const agentName = config.agentName || 'REON';
+    const agentTag = config.agentTagline || 'AI Agent by ReonTech';
+    await sock.sendMessage(msg.from, { text: `⚡ _${agentName} sedang berpikir..._` });
     const aiText = await generateWithRotation(finalQuestion, 'prefix', [], imageBase64, contactId);
     
-    // Identitas personal di footer
-    const footer = '_AutoWA by Luthfi Alfaridz — ReonTech_';
-    await sock.sendMessage(msg.from, { text: `🤖 *AI Assistant*\n\n${aiText}\n\n─────────────────\n${footer}` });
-    logger.outgoing(msg.from.split('@')[0], `[AI] ${aiText.substring(0, 50)}...`);
+    await sock.sendMessage(msg.from, { text: `⚡ *${agentName}*\n\n${aiText}\n\n─────────────────\n_${agentTag}_` });
+    logger.outgoing(msg.from.split('@')[0], `[${agentName}] ${aiText.substring(0, 50)}...`);
   } catch (err) {
     logger.error('AI error', err);
     await sock.sendMessage(msg.from, { text: '❌ Semua AI sedang gangguan, coba lagi nanti!' });

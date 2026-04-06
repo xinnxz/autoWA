@@ -7,6 +7,11 @@
 
 module.exports = {
 
+  // ─── IDENTITAS AI AGENT ───
+  // Nama AI agent kamu — dipakai di branding, !ai command, dashboard, footer
+  agentName: "REON",
+  agentTagline: "AI Agent by ReonTech",
+
   // ─── BAHASA / LANGUAGE ───
   // Bahasa yang dipakai bot untuk semua output (command, AI prompt, web page)
   // Pilihan: "id" (Indonesia), "en" (English), "es" (Español), "ar" (العربية),
@@ -127,7 +132,7 @@ module.exports = {
     maxTokens: 1200,            // Max panjang jawaban AI (dalam token, ~900 kata)
 
     // Teks tambahan di akhir setiap balasan AI (biarkan kosong "" jika tidak ingin pakai watermark)
-    footerMessage: "🤖 _Auto-reply by AI_",
+    footerMessage: "🤖 _Powered by REON_",
 
     // Chat history — AI ingat percakapan sebelumnya per kontak
     chatHistory: {

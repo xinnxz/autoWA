@@ -93,7 +93,7 @@ Kalo bisa jawab pertanyaan, jawab. Kalo ga tau, bilang nanti dikabarin. Boleh na
   // ─── Command Responses ───
   cmd: {
     // !help
-    helpHeader: '📖 *Bot Commands*',
+    helpHeader: '⚡ *REON Commands*',
     helpControl: '*Control:*',
     helpConfig: '*Konfigurasi AI:*',
     helpStyle: '*Style:*',
