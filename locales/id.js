@@ -174,6 +174,13 @@ module.exports = {
     status: 'Status',
     nonaktif: 'Nonaktif',
     commandsOnly: '_Commands hanya untuk owner._',
+
+    // Smart Presence
+    autoHeader: '🤖 *Smart Presence*',
+    autoEnabled: '✅ Smart presence AKTIF — bot otomatis deteksi aktivitas kamu.',
+    autoDisabled: '⏸️ Smart presence MATI — pakai !on/!off manual.',
+    autoTimeout: (m) => `⏱️ Timeout: ${m} menit`,
+    autoLastActive: (t) => `📡 Terakhir aktif: ${t}`,
   },
 
   // ─── Web Page ───

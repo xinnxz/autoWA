@@ -56,6 +56,7 @@ Uses AI to generate contextual, human-like responses — not canned templates.
 |----------|---------|-------------|
 | **Core** | AI Contextual Reply | Replies match the context of the incoming message |
 | | Away / DND Mode | Activate manually or on a schedule |
+| | Smart Presence | Auto-detect owner activity — no more manual !on/!off |
 | | Multi-Provider AI | Groq (primary) + Gemini (fallback), automatic key rotation |
 | | Chat History | AI remembers last 6 messages per contact for natural conversation |
 | | Owner-Only Commands | Full control via WhatsApp chat commands |
@@ -525,6 +526,15 @@ Send commands to **yourself** in WhatsApp (personal chat). Only the owner can ex
 | `!dnd 2h` | Activate away mode for 2 hours, then auto-deactivate |
 | `!dnd 30m` | Activate away mode for 30 minutes |
 
+### Smart Presence
+
+| Command | Description |
+|---------|-------------|
+| `!auto` | Show smart presence status |
+| `!auto on` | Enable auto-detection (resets manual override) |
+| `!auto off` | Disable auto-detection (manual !on/!off only) |
+| `!auto <1-60>` | Change inactivity timeout in minutes |
+
 ### Inbox
 
 | Command | Description |
@@ -605,6 +615,11 @@ Defined in `.env`. Copy from `.env.example` to get started.
 | `cleanup.inboxMaxAge` | `24` | Delete inbox messages after N hours |
 | `keepAlive.enabled` | `true` | Self-ping to prevent sleep |
 | `keepAlive.intervalMinutes` | `4` | Ping interval |
+| `smartPresence.enabled` | `true` | Auto-detect owner activity to toggle away mode |
+| `smartPresence.inactivityTimeout` | `5` | Minutes of inactivity before away mode activates |
+| `smartPresence.signals.readReceipts` | `true` | Detect when owner reads messages |
+| `smartPresence.signals.outgoingMessages` | `true` | Detect when owner sends messages |
+| `smartPresence.signals.presenceUpdates` | `true` | Detect online/typing status |
 
 ### AI Providers
 
@@ -701,6 +716,7 @@ autoWA/
 |   |-- features/
 |   |   |-- aiReply.js          # AI response generation, provider rotation, metrics
 |   |   |-- botControl.js       # Command handler, state management, group settings
+|   |   |-- presenceDetector.js  # Smart presence: auto-detect owner activity
 |   |   |-- autoReply.js        # Keyword-based auto-reply rules
 |   |   |-- faq.js              # FAQ response database
 |   |   |-- broadcast.js        # Broadcast utilities

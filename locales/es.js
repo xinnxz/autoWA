@@ -135,6 +135,11 @@ module.exports = {
     owner: 'Dueño', inbox: 'Bandeja', memory: 'Memoria', uptime: 'Tiempo activo',
     schedule: 'Horario', status: 'Estado', nonaktif: 'Desactivado',
     commandsOnly: '_Solo el dueño puede usar estos comandos._',
+    autoHeader: '🤖 *Smart Presence*',
+    autoEnabled: '✅ Smart presence ACTIVADO — el bot detecta tu actividad automáticamente.',
+    autoDisabled: '⏸️ Smart presence DESACTIVADO — usa !on/!off manualmente.',
+    autoTimeout: (m) => `⏱️ Timeout: ${m} minutos`,
+    autoLastActive: (t) => `📡 Última actividad: ${t}`,
   },
 
   web: {

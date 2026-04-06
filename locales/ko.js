@@ -91,6 +91,11 @@ module.exports = {
     logoutBye: '로그아웃 중...',
     owner: '소유자', inbox: '받은편지함', memory: '메모리', uptime: '가동시간',
     schedule: '일정', status: '상태', nonaktif: '비활성', commandsOnly: '_소유자 전용 명령어._',
+    autoHeader: '🤖 *스마트 프레즌스*',
+    autoEnabled: '✅ 스마트 프레즌스 ON — 봇이 자동으로 활동을 감지합니다.',
+    autoDisabled: '⏸️ 스마트 프레즌스 OFF — !on/!off를 수동으로 사용하세요.',
+    autoTimeout: (m) => `⏱️ 타임아웃: ${m}분`,
+    autoLastActive: (t) => `📡 마지막 활동: ${t}`,
   },
 
   web: {

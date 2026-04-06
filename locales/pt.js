@@ -121,6 +121,11 @@ module.exports = {
     logoutBye: 'Saindo... tchau!',
     owner: 'Dono', inbox: 'Caixa', memory: 'Memória', uptime: 'Tempo ativo',
     schedule: 'Agenda', status: 'Status', nonaktif: 'Desativado', commandsOnly: '_Comandos só para o dono._',
+    autoHeader: '🤖 *Smart Presence*',
+    autoEnabled: '✅ Smart presence ATIVADO — o bot detecta sua atividade automaticamente.',
+    autoDisabled: '⏸️ Smart presence DESATIVADO — use !on/!off manualmente.',
+    autoTimeout: (m) => `⏱️ Timeout: ${m} minutos`,
+    autoLastActive: (t) => `📡 Última atividade: ${t}`,
   },
 
   web: {

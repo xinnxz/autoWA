@@ -91,6 +91,11 @@ module.exports = {
     logoutBye: 'Déconnexion... au revoir !',
     owner: 'Propriétaire', inbox: 'Boîte', memory: 'Mémoire', uptime: 'Durée',
     schedule: 'Planning', status: 'Statut', nonaktif: 'Désactivé', commandsOnly: '_Commandes réservées au propriétaire._',
+    autoHeader: '🤖 *Smart Presence*',
+    autoEnabled: '✅ Smart presence ACTIVÉ — le bot détecte automatiquement votre activité.',
+    autoDisabled: '⏸️ Smart presence DÉSACTIVÉ — utilisez !on/!off manuellement.',
+    autoTimeout: (m) => `⏱️ Délai: ${m} minutes`,
+    autoLastActive: (t) => `📡 Dernière activité: ${t}`,
   },
 
   web: {

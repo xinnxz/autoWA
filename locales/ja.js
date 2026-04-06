@@ -92,6 +92,11 @@ module.exports = {
     logoutBye: 'ログアウト中...',
     owner: 'オーナー', inbox: '受信箱', memory: 'メモリ', uptime: '稼働時間',
     schedule: 'スケジュール', status: 'ステータス', nonaktif: '無効', commandsOnly: '_オーナー専用コマンド_',
+    autoHeader: '🤖 *スマートプレゼンス*',
+    autoEnabled: '✅ スマートプレゼンスON — ボットが自動的にアクティビティを検出します。',
+    autoDisabled: '⏸️ スマートプレゼンスOFF — !on/!offを手動で使用してください。',
+    autoTimeout: (m) => `⏱️ タイムアウト: ${m}分`,
+    autoLastActive: (t) => `📡 最終アクティブ: ${t}`,
   },
 
   web: {

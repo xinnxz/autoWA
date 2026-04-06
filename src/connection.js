@@ -36,9 +36,18 @@ const AUTH_FOLDER = process.env.AUTH_DIR || './auth_info';
  * - Otherwise → store auth in local folder (for development)
  */
 async function connectToWhatsApp(onMessage, onQR, onConnected) {
-  // File-based auth — session stored in auth_info/ folder
-  const { state, saveCreds } = await useMultiFileAuthState(AUTH_FOLDER);
-  logger.info(`[Auth] Using local filesystem (${AUTH_FOLDER})`);
+  let state, saveCreds;
+  
+  if (process.env.MONGODB_URI) {
+    // Cloud Auth — session stored in MongoDB Atlas (Persist over restarts)
+    const { useMongoDBAuthState } = require('./utils/mongoAuth');
+    ({ state, saveCreds } = await useMongoDBAuthState(process.env.MONGODB_URI));
+    logger.info('[Auth] Using MongoDB (Cloud Storage)');
+  } else {
+    // Local File Auth — session stored in auth_info/ folder (For development)
+    ({ state, saveCreds } = await useMultiFileAuthState(AUTH_FOLDER));
+    logger.info(`[Auth] Using local filesystem (${AUTH_FOLDER})`);
+  }
 
   const { version } = await fetchLatestBaileysVersion();
   logger.info(`Using Baileys v${version.join('.')}`);
@@ -55,6 +64,17 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
     printQRInTerminal: false,
     browser: ['AutoWA Bot', 'Chrome', '1.0.0'],
     generateHighQualityLinkPreview: false,
+
+    // ─── Connection Resilience (untuk cloud hosting) ───
+    // keepAliveIntervalMs: Baileys kirim ping ke WA server tiap X ms
+    // Ini WAJIB untuk cloud hosting karena tanpa ini WebSocket bisa
+    // diam-diam mati tanpa trigger 'connection.close'
+    keepAliveIntervalMs: 30_000,       // Ping WA server tiap 30 detik
+    retryRequestDelayMs: 2_000,        // Delay sebelum retry request yang gagal
+
+    // Beri tahu Baileys supaya ga mark online otomatis
+    // (sudah di-handle oleh Smart Presence)
+    markOnlineOnConnect: false,
   });
 
   // Suppress Baileys internal session noise (prekey bundles, signal protocol, etc.)
@@ -107,6 +127,11 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
     if (connection === 'open') {
       if (sock._qrTimer) { clearInterval(sock._qrTimer); sock._qrTimer = null; }
       const name = sock.user?.name || sock.user?.id || 'Unknown';
+
+      // Reset reconnect counter — koneksi berhasil!
+      sock._reconnectAttempt = 0;
+      logger.info(`[Connection] Connected as ${name}`);
+
       if (onConnected) onConnected(name);
 
       // ─── Smart Presence: setup activity detection ───
@@ -126,12 +151,47 @@ async function connectToWhatsApp(onMessage, onQR, onConnected) {
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       const reason = DisconnectReason;
 
+      // ─── Detailed disconnect logging ───
+      // Ini penting untuk debug kenapa bot disconnect di Koyeb
+      const reasonMap = {
+        [reason.loggedOut]: 'LOGGED_OUT (perlu scan QR ulang)',
+        [reason.badSession]: 'BAD_SESSION (session corrupt)',
+        [reason.connectionClosed]: 'CONNECTION_CLOSED (server tutup koneksi)',
+        [reason.connectionLost]: 'CONNECTION_LOST (network issue)',
+        [reason.connectionReplaced]: 'CONNECTION_REPLACED (login dari device lain)',
+        [reason.timedOut]: 'TIMED_OUT (koneksi timeout)',
+        [reason.restartRequired]: 'RESTART_REQUIRED (WA minta restart)',
+        [reason.multideviceMismatch]: 'MULTIDEVICE_MISMATCH',
+      };
+      const reasonStr = reasonMap[statusCode] || `UNKNOWN (code: ${statusCode})`;
+      logger.warn(`[Connection] Disconnect: ${reasonStr}`);
+
+      // ─── Handle specific cases ───
       if (statusCode === reason.loggedOut) {
-        logger.error('Logged out dari WhatsApp! Hapus folder auth_info dan scan ulang.');
-      } else {
-        logger.warn(`Koneksi terputus (code: ${statusCode}). Reconnecting...`);
-        setTimeout(() => connectToWhatsApp(onMessage, onQR, onConnected), 3000);
+        // Logged out = perlu scan QR ulang, jangan reconnect
+        logger.error('[Connection] Logged out! Hapus folder auth_info dan scan QR ulang.');
+        return;
       }
+
+      if (statusCode === reason.connectionReplaced) {
+        // Owner buka WA Web di browser lain → jangan spam reconnect
+        logger.warn('[Connection] Login dari device lain. Menunggu 30 detik sebelum reconnect...');
+        setTimeout(() => connectToWhatsApp(onMessage, onQR, onConnected), 30_000);
+        return;
+      }
+
+      // ─── Exponential backoff reconnect ───
+      // Retry 1: 3s, Retry 2: 6s, Retry 3: 12s, ... Max: 60s
+      // Ini mencegah spam reconnect yang bisa menyebabkan ban
+      const attempt = (sock._reconnectAttempt || 0) + 1;
+      const delay = Math.min(3000 * Math.pow(2, attempt - 1), 60_000);
+      logger.info(`[Connection] Reconnecting in ${delay / 1000}s (attempt #${attempt})...`);
+
+      setTimeout(() => {
+        const newSock = connectToWhatsApp(onMessage, onQR, onConnected);
+        // Pass attempt count ke socket baru
+        newSock.then(s => { if (s) s._reconnectAttempt = attempt; }).catch(() => {});
+      }, delay);
     }
   });
 

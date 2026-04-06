@@ -91,6 +91,11 @@ module.exports = {
     logoutBye: 'Logging out...',
     owner: 'Pemilik', inbox: 'Peti masuk', memory: 'Memori', uptime: 'Masa aktif',
     schedule: 'Jadual', status: 'Status', nonaktif: 'Tidak aktif', commandsOnly: '_Arahan untuk pemilik sahaja._',
+    autoHeader: '🤖 *Smart Presence*',
+    autoEnabled: '✅ Smart presence AKTIF — bot mengesan aktiviti anda secara automatik.',
+    autoDisabled: '⏸️ Smart presence MATI — guna !on/!off secara manual.',
+    autoTimeout: (m) => `⏱️ Timeout: ${m} minit`,
+    autoLastActive: (t) => `📡 Aktiviti terakhir: ${t}`,
   },
 
   web: {

@@ -91,6 +91,11 @@ module.exports = {
     logoutBye: 'लॉगआउट हो रहा है...',
     owner: 'ओनर', inbox: 'इनबॉक्स', memory: 'मेमोरी', uptime: 'अपटाइम',
     schedule: 'शेड्यूल', status: 'स्टेटस', nonaktif: 'बंद', commandsOnly: '_सिर्फ़ ओनर के कमांड्स।_',
+    autoHeader: '🤖 *स्मार्ट प्रेज़ेंस*',
+    autoEnabled: '✅ स्मार्ट प्रेज़ेंस ऑन — बॉट ऑटोमैटिक एक्टिविटी डिटेक्ट करेगा।',
+    autoDisabled: '⏸️ स्मार्ट प्रेज़ेंस ऑफ — !on/!off मैनुअली यूज़ करें।',
+    autoTimeout: (m) => `⏱️ टाइमआउट: ${m} मिनट`,
+    autoLastActive: (t) => `📡 अंतिम एक्टिव: ${t}`,
   },
 
   web: {

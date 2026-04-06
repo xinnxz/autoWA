@@ -95,6 +95,11 @@ module.exports = {
     logoutBye: 'جاري تسجيل الخروج...',
     owner: 'المالك', inbox: 'البريد', memory: 'الذاكرة', uptime: 'وقت التشغيل',
     schedule: 'الجدول', status: 'الحالة', nonaktif: 'معطّل', commandsOnly: '_الأوامر للمالك فقط._',
+    autoHeader: '🤖 *Smart Presence*',
+    autoEnabled: '✅ الكشف الذكي مفعّل — البوت يكتشف نشاطك تلقائياً.',
+    autoDisabled: '⏸️ الكشف الذكي معطّل — استخدم !on/!off يدوياً.',
+    autoTimeout: (m) => `⏱️ المهلة: ${m} دقائق`,
+    autoLastActive: (t) => `📡 آخر نشاط: ${t}`,
   },
 
   web: {
