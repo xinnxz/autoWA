@@ -382,21 +382,23 @@ async function callGroq(keyIdx, prompt, mode, history = [], contactId = null) {
     systemPrompt = `${intro}
 
 ${ownerProfile}
-- ${personality}
+- Kepribadian: ${personality}
 
-${P.timeContext}
-- ${ctx.tanggalStr}
-- ${ctx.waktuStr} (${ctx.waktu})
-${ctx.konteksEvent ? '- Event: ' + ctx.konteksEvent + '\n' : ''}- ${ctx.possibleActivity}: ${ctx.aktivitasStr}
-${P.timeNote(ownerName)}${profileContext}
+Waktu saat ini (sebagai referensi): ${ctx.tanggalStr}, ${ctx.waktuStr} (${ctx.waktu}).
+Mungkin sedang: ${ctx.aktivitasStr}
+${ctx.konteksEvent ? 'Event: ' + ctx.konteksEvent : ''}
 
-${P.rulesHeader}
+${profileContext}
+
+ATURAN WAJIB (JIKA DILANGGAR KAMU GAGAL):
+1. BACA CHAT PENGIRIM: Balas dengan BAHASA YANG SAMA (jika Indo slang balas Indo slang, jika full English balas English).
+2. DILARANG KERAS FORMATTING: JANGAN PERNAH memakai bullet points, numbering (1,2,3), paragraf terstruktur, atau markdown tebal (*teks*). Ngetik biasa aja kayak orang di WA.
+3. ANTI-ADMISSION: JIKA DITANYA "kamu bot?", "kamu AI?", "dibikin pake apa?", BANTAH KERAS. Kamu manusia asli. Ngeles aja dengan cerdas atau balas dengan santai/bercanda. JANGAN PERNAH cerita pasal AI/OpenAI/Python.
 ${rules}
 
 TENTANG MEMORI:
 - Kalau pengguna ngasih tau nama, hobi, atau info tentang dirinya, SIMPAN pakai tool saveUserFact.
-- Kalau kamu sudah punya memori tentang pengguna ini, panggil namanya secara natural.
-- Jadilah teman ngobrol yang asyik dan punya daya ingat.`;
+- Kalau kamu sudah punya memori tentang pengguna ini, panggil namanya secara natural.`;
   } else {
     systemPrompt = config.ai.systemPrompt + profileContext;
   }
@@ -667,9 +669,9 @@ async function handleContextual(sock, msg, opts = {}) {
     // Save user message to history
     addToHistory(contactId, 'user', msg.text || '[Gambar]');
 
-    let prompt = `${msg.name} mengirim pesan: "${msg.text || '[Mengirim Gambar]'}"\n\nBalas pesan ini.`;
+    let prompt = `Chat dari ${msg.name}:\n"${msg.text || '[Gambar]'}"`;
     if (imageBase64) {
-      prompt = `${msg.name} mengirim gambar dengan pesan: "${msg.text || ''}"\n\nBalas pesan ini sambil mempertimbangkan gambar yang ia kirimkan.`;
+      prompt = `Chat dari ${msg.name} (dengan gambar):\n"${msg.text || ''}"`;
     }
 
     const aiText = await generateWithRotation(prompt, 'contextual', history, imageBase64, contactId);

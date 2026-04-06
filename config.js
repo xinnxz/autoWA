@@ -132,7 +132,7 @@ module.exports = {
     maxTokens: 1200,            // Max panjang jawaban AI (dalam token, ~900 kata)
 
     // Teks tambahan di akhir setiap balasan AI (biarkan kosong "" jika tidak ingin pakai watermark)
-    footerMessage: "🤖 _Powered by REON_",
+    footerMessage: "",
 
     // Chat history — AI ingat percakapan sebelumnya per kontak
     chatHistory: {
