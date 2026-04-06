@@ -194,6 +194,20 @@ ${L.helpFooter(currentStyle, currentModel)}`;
     return true;
   }
 
+  // ─── !auto → Kembalikan ke Smart Presence (Auto) ───
+  if (text.startsWith('!auto')) {
+    const { resetOverride } = require('./presenceDetector');
+    resetOverride();
+    const L = getLocale().cmd;
+    // Pake string autoEnabled dari loc kalau ada, kalau ga fallback
+    const msgText = L.autoEnabled || '✅ Smart presence AKTIF — bot otomatis deteksi aktivitas kamu.';
+    await sock.sendMessage(msg.from, { 
+      text: msgText 
+    });
+    logger.info('Smart presence auto mode restored (manual override off)');
+    return true;
+  }
+
   // ─── !dnd <durasi> → DND mode sementara ───
   if (text.startsWith('!dnd')) {
     const args = text.replace('!dnd', '').trim();

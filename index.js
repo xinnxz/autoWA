@@ -389,16 +389,13 @@ app.get('/', async (req, res) => {
 
   // Connected state
   if (isConnected) {
-    const ownerNum = process.env.OWNER_NUMBER || '';
-    const dashUrl = '/dashboard?key=' + ownerNum;
     return res.send('<html><head><title>AutoWA — Connected</title>' + head
-      + '<style>.icon{width:72px;height:72px;border-radius:50%;background:#e8faf0;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;animation:pop .5s ease}.icon svg{width:36px;height:36px}@keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.1)}100%{transform:scale(1)}}h1{color:#00a884}.meta{color:#8696a0;font-size:13px;margin-top:20px;padding-top:16px;border-top:1px solid #e9edef}a{color:#00a884;text-decoration:none;font-weight:500}a:hover{text-decoration:underline}</style></head>'
+      + '<style>.icon{width:72px;height:72px;border-radius:50%;background:#e8faf0;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;animation:pop .5s ease}.icon svg{width:36px;height:36px}@keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.1)}100%{transform:scale(1)}}h1{color:#00a884}.meta{color:#8696a0;font-size:13px;margin-top:20px;padding-top:16px;border-top:1px solid #e9edef}a{color:#00a884;text-decoration:none;font-weight:500;padding:8px 16px;background:#f0f2f5;border-radius:8px;}a:hover{background:#e9edef}</style></head>'
       + '<body><div class="ctn">'
       + '<div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#00a884" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
-      + '<h1>Connected</h1>'
-      + '<p class="sub">Your WhatsApp is linked successfully.<br>Redirecting to dashboard...</p>'
-      + '<p class="meta"><a href="' + dashUrl + '">Open Dashboard</a></p>'
-      + '</div><script>setTimeout(function(){window.location.href="' + dashUrl + '"},2000)</script></body></html>');
+      + '<h1>Bot is Active</h1>'
+      + '<p class="sub">WhatsApp engine is running in the background.</p>'
+      + '</div></body></html>');
   }
 
   // Waiting for QR

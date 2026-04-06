@@ -175,7 +175,7 @@ function loadKeys() {
   // ─── Init Gemini models ───
   const ownerName = process.env.OWNER_NAME || 'Bot';
   const ctxPrompt = config.ai.contextualPrompt ||
-    `Kamu adalah ${ownerName}. Balas seolah kamu ${ownerName} yang lagi AFK. Bahasa gaul, santai. Jawab 1-2 kalimat. Jangan bilang kamu AI. Di akhir tambah: _~autoreply by ${ownerName.toLowerCase()}_`;
+    `Kamu adalah ${ownerName}. Balas seolah kamu ${ownerName} yang lagi AFK. Bahasa gaul, santai. Jawab 1-2 kalimat. Jangan bilang kamu AI.`;
 
   const geminiModelName = config.ai.geminiModel || 'gemini-2.0-flash';
   providers.gemini.prefixModels = [];
@@ -376,9 +376,12 @@ async function callGroq(keyIdx, prompt, mode, history = [], contactId = null) {
     const personality = styleObj ? styleObj.personality : locale.customPersonality;
     const rules = styleObj ? styleObj.rules(ownerName) : locale.customRules(style);
 
+    // Bangun profil owner dari config (atau fallback ke default)
+    const ownerProfile = config.ai.ownerProfile || P.profile(ownerName);
+
     systemPrompt = `${intro}
 
-${P.profile(ownerName)}
+${ownerProfile}
 - ${personality}
 
 ${P.timeContext}
@@ -389,7 +392,11 @@ ${P.timeNote(ownerName)}${profileContext}
 
 ${P.rulesHeader}
 ${rules}
-${P.closingRule(ownerName)}`;
+
+TENTANG MEMORI:
+- Kalau pengguna ngasih tau nama, hobi, atau info tentang dirinya, SIMPAN pakai tool saveUserFact.
+- Kalau kamu sudah punya memori tentang pengguna ini, panggil namanya secara natural.
+- Jadilah teman ngobrol yang asyik dan punya daya ingat.`;
   } else {
     systemPrompt = config.ai.systemPrompt + profileContext;
   }
@@ -401,15 +408,15 @@ ${P.closingRule(ownerName)}`;
   }
   messages.push({ role: 'user', content: prompt });
 
-  // ─── TOOLS HANYA UNTUK MODE PREFIX (!ai) ───
-  // Mode contextual (auto-reply) TIDAK pakai tools agar stabil
-  const useTools = (mode === 'prefix');
+  // ─── TOOLS UNTUK SEMUA MODE ───
+  // Contextual juga perlu tools (saveUserFact) agar AI bisa ingat user
+  const useTools = true;
 
   const requestParams = {
     model: getOverrides().model || config.ai.model || 'llama-3.3-70b-versatile',
     messages,
     max_tokens: config.ai.maxTokens || 500,
-    temperature: 0.6,
+    temperature: 0.75,
   };
 
   // Tambahkan tools hanya untuk !ai command
@@ -670,15 +677,20 @@ async function handleContextual(sock, msg, opts = {}) {
     // Save bot reply to history
     addToHistory(contactId, 'assistant', aiText);
 
+    let finalAiText = aiText;
+    if (config.ai.footerMessage && config.ai.footerMessage.trim() !== '') {
+      finalAiText += `\n\n${config.ai.footerMessage}`;
+    }
+
     // Restore style
     if (opts.groupStyle && prevStyle !== undefined) {
       getOverrides().replyStyle = prevStyle;
     }
 
-    const sendOpts = { text: aiText };
+    const sendOpts = { text: finalAiText };
     if (opts.mention) sendOpts.mentions = [opts.mention];
     await sock.sendMessage(msg.from, sendOpts);
-    logger.outgoing(msg.from.split('@')[0], `[AI-Context] ${aiText.substring(0, 50)}...`);
+    logger.outgoing(msg.from.split('@')[0], `[AI-Context] ${finalAiText.substring(0, 50).replace(/\n/g, ' ')}...`);
   } catch (err) {
     logger.error(`Contextual AI error: ${err.message}`, err);
     logger.warn(`[DEBUG] Error stack: ${err.stack?.split('\n')[1]?.trim() || 'unknown'}`);

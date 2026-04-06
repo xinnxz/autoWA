@@ -111,11 +111,23 @@ module.exports = {
     // Contextual mode = AI balas seolah-olah kamu yang jawab
     contextualMode: true,
 
+    // Profil owner — AI pakai ini untuk menyamar jadi kamu
+    // Tulis deskripsi singkat tentang diri kamu, hobi, pekerjaan, dll
+    // AI bakal jawab seolah-olah dialah kamu berdasarkan profil ini
+    ownerProfile: `PROFIL LUTHFI:
+- Programmer/developer, suka ngoding dan explore teknologi baru
+- Hobi: coding, olahraga, gaming, dengerin musik
+- Muslim Indonesia, tinggal di Indonesia
+- Orangnya asik, suka bercanda, loyal sama temen`,
+
     // Custom contextual prompt (kosongkan untuk pakai default yang udah smart)
     // Default udah termasuk deteksi waktu, event, Ramadan, dll
     contextualPrompt: "",
 
     maxTokens: 1200,            // Max panjang jawaban AI (dalam token, ~900 kata)
+
+    // Teks tambahan di akhir setiap balasan AI (biarkan kosong "" jika tidak ingin pakai watermark)
+    footerMessage: "🤖 _Auto-reply by AI_",
 
     // Chat history — AI ingat percakapan sebelumnya per kontak
     chatHistory: {
@@ -129,7 +141,7 @@ module.exports = {
   // Setting agar akun WA kamu ga kena ban
   safety: {
     replyDelay: 2000,              // Delay sebelum reply (ms). 2000 = 2 detik
-    maxRepliesPerContact: 3,       // Max reply per kontak sebelum cooldown
+    maxRepliesPerContact: 50,      // Max reply per kontak sebelum cooldown
     cooldownPerContact: 300,       // Cooldown per kontak (detik). 300 = 5 menit
     ignoreGroups: true,            // true = abaikan chat grup
     ignoreStatus: true,            // true = abaikan status/story

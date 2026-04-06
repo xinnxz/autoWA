@@ -398,12 +398,13 @@ function render(){
   else{cl.innerHTML=contacts.map(c=>`<div class="row"><div class="ic-box green">${SVG.user}</div><div class="info"><div class="p">${esc(c.name)}</div><div class="s">${esc(c.lastMsg)}</div></div><div class="meta">${c.msgCount}x \u00b7 ${ago(c.lastTime)}</div></div>`).join('')}
 
   // Config — editable fields
-  document.getElementById('cfg-name').value=d.owner||'';
-  document.getElementById('cfg-tz').value=d.timezone||'Asia/Jakarta';
-  document.getElementById('cfg-delay').value=d.replyDelay||2000;
-  document.getElementById('cfg-tokens').value=d.maxTokens||500;
-  document.getElementById('cfg-max').value=d.maxReplies||3;
-  document.getElementById('cfg-cool').value=d.cooldown||300;
+  const ae = document.activeElement;
+  if(ae?.id !== 'cfg-name') document.getElementById('cfg-name').value=d.owner||'';
+  if(ae?.id !== 'cfg-tz') document.getElementById('cfg-tz').value=d.timezone||'Asia/Jakarta';
+  if(ae?.id !== 'cfg-delay') document.getElementById('cfg-delay').value=d.replyDelay||2000;
+  if(ae?.id !== 'cfg-tokens') document.getElementById('cfg-tokens').value=d.maxTokens||500;
+  if(ae?.id !== 'cfg-max') document.getElementById('cfg-max').value=d.maxReplies||50;
+  if(ae?.id !== 'cfg-cool') document.getElementById('cfg-cool').value=d.cooldown||300;
   document.getElementById('cfg-ctx').checked=!!d.contextualMode;
   document.getElementById('cfg-hist').checked=!!d.historyEnabled;
   document.getElementById('cfg-ig').checked=!!d.ignoreGroups;
