@@ -480,8 +480,9 @@ TENTANG MEMORI:
     reply = secondCall.choices[0]?.message?.content || '';
   }
   
-  // DeepSeek R1 kadang output <think>...</think> tags, hapus
-  reply = reply.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  // Bersihkan tag-tag internal model yang sering bocor ke teks balasan
+  reply = reply.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  reply = reply.replace(/<function=.*?>[\s\S]*?<\/function>/gi, '').trim();
 
   return reply;
 }
